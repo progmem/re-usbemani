@@ -31,21 +31,66 @@ void PS2_Addressed(uint8_t in);
 void PS2_HeaderFinished(uint8_t in);
 void PS2_LowerSent(uint8_t in);
 
+uint8_t memory_card_timeout = 0;
+
+void PS2_MemoryCardTimeout(uint8_t in) {
+  if  (memory_card_timeout) --memory_card_timeout;
+  if (!memory_card_timeout)
+    PS2Handler = PS2_Listen;
+}
+
+void PS2_MemoryCardID2(uint8_t in) {
+ // If we receive a 0x01 here, revert back to the listener
+  --memory_card_timeout;
+  if (in == 0x01) {
+    memory_card_timeout = 0;
+    PS2_Listen(in);
+    return;
+  }
+  PS2Handler = PS2_MemoryCardTimeout;
+}
+
+void PS2_MemoryCardID1(uint8_t in) {
+ // If we receive a 0x01 here, revert back to the listener
+  --memory_card_timeout;
+  if (in == 0x01) {
+    memory_card_timeout = 0;
+    PS2_Listen(in);
+    return;
+  }
+  PS2Handler = PS2_MemoryCardID2;
+}
+
+// Memory card addressed; ignore input
+void PS2_MemoryCardAddressed(uint8_t in) {
+  memory_card_timeout = 8;
+  if (in == 'R')
+    memory_card_timeout = 138;
+  if (in == 'W')
+    memory_card_timeout = 136;
+
+  PS2Handler = PS2_MemoryCardID1;
+}
+
 // Idle state.
 void PS2_Listen(uint8_t in) {
+  if (in == 0x81) {
+    DDRB &= ~0x08;
+    PS2Handler = PS2_MemoryCardAddressed;
+  }
   // Report as a digital controller when addressed
   if (in == 0x01) {
-    PS2_Acknowledge();
-    SPDR = 0x41;
+    DDRB |= 0x08;
+    SPDR = ~0x41;
     PS2Handler = PS2_Addressed;
-    return;
+    PS2_Acknowledge();
   }
 }
 
 // When polling is requested, begin responding
 void PS2_Addressed(uint8_t in) {
   if (in == 0x42) {
-    SPDR = 0x5A;
+    SPDR = ~0x5A;
     PS2Handler = PS2_HeaderFinished;
     PS2_Acknowledge();
   }
@@ -55,7 +100,7 @@ void PS2_Addressed(uint8_t in) {
 void PS2_HeaderFinished(uint8_t in) {
   uint8_t *data = (uint8_t *)&Data;
 
-  SPDR = *data;
+  SPDR = ~(*data);
   PS2Handler = PS2_LowerSent;
   PS2_Acknowledge();
 }
@@ -64,7 +109,7 @@ void PS2_HeaderFinished(uint8_t in) {
 void PS2_LowerSent(uint8_t in) {
   uint8_t *data = (uint8_t *)&Data + 1;
 
-  SPDR = *data;
+  SPDR = ~(*data);
   PS2Handler = PS2_Listen;
   PS2_Acknowledge();
 }
@@ -86,14 +131,14 @@ void PS2_Init(void) {
         | (1 << SPE);
 
   // Set the first byte up
-  SPDR = 0xFF;
+  SPDR = 0x00; // 0xFF;
   PS2Handler = PS2_Listen;
   sei();
 }
 
 // Update the stored data packet
 void PS2_Task(void) {
-  if (PINB & 0x01) SPDR = 0xFF;
+  if (PINB & 0x01) SPDR = 0x00; // 0xFF;
 
   PS2_InputList_t *map = PS2Input;
   uint16_t new_data = 0;
@@ -133,6 +178,6 @@ void PS2_AlwaysInput(PS2_INPUT buttons) {
 // When a transfer is complete, determine what to do next
 ISR(SPI_STC_vect) {
   uint8_t input = SPDR;
-  if (input == 0x01) PS2Handler = PS2_Listen;
+  if (input == 0x01 && (!memory_card_timeout)) PS2Handler = PS2_Listen;
   PS2Handler(SPDR);
 }
