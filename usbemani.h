@@ -23,13 +23,16 @@ typedef enum {
 } USBEMANI_COMMAND;
 
 typedef struct {
-   int8_t   LX;
-   int8_t   LY;
-   int8_t   RX;
-   int8_t   RY;
-  uint8_t   Rotary[5];
-
-  uint16_t  Button;
+   int16_t   Wheel;
+   int16_t   Z;
+   int16_t   RZ;
+  uint16_t   Button;
+    int8_t   LX;
+    int8_t   LY;
+    int8_t   RX;
+    int8_t   RY;
+   int16_t   Slider;
+   int16_t   Dial;
 } USBemani_Input_t;
 
 typedef struct {

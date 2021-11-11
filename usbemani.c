@@ -205,12 +205,13 @@ void CreateInputReport(USBemani_Input_t *Report) {
       Report->LY = 100;
   }
 
-  Report->Rotary[0] = Input_GetRotaryPosition(0);
-  Report->Rotary[1] = Input_GetRotaryPosition(1);
-  Report->Rotary[2] = Input_GetRotaryPosition(2);
-  Report->Rotary[3] = Input_GetRotaryPosition(3);
-  Report->Rotary[4] = Input_GetRotaryPosition(4);
-  Report->Button    = Input_GetButtons();
+  Report->Slider  = Input_GetRotaryPosition16(0);
+  Report->Dial    = Input_GetRotaryPosition16(1);
+  Report->Wheel   = Input_GetRotaryPosition16(2);
+  Report->Z       = Input_GetRotaryPosition16(3);
+  Report->RZ      = Input_GetRotaryPosition16(4);
+  Report->Button  = Input_GetButtons();
+
 }
 
 void HID_Task(void) {
