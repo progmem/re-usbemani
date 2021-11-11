@@ -51,10 +51,12 @@ typedef struct {
   uint8_t                 group[2];
   uint8_t                 mask[2];
   uint8_t                 state;
-  uint16_t                position;
   INPUT_ROTARY_DIRECTION  direction;
-  uint16_t                hold;
+  uint16_t                position;
   uint16_t                max_position;
+  uint16_t                position16;
+  uint16_t                increment16;
+  uint16_t                hold;
   uint16_t                max_hold;
 } Input_Rotary_t;
 
@@ -102,6 +104,7 @@ void Output_Task(void);
 uint16_t Input_Ticks(uint16_t index);
 uint16_t Input_GetButtons(void);
 uint16_t Input_GetRotaryPosition(uint16_t index);
+uint16_t Input_GetRotaryPosition16(uint16_t index);
 uint16_t Input_GetRotaryMaximum(uint16_t index);
 uint16_t Input_GetRotaryDirection(uint16_t index);
 

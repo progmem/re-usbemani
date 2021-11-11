@@ -66,9 +66,11 @@ static inline void process_rotary(void) {
     if (result) {
       uint8_t increment;
       if (result == INPUT_ROTARY_CW) {
-        increment = enc->max_position+1;
+        increment        = enc->max_position+1;
+        enc->position16 += enc->increment16;
       } else {
-        increment = enc->max_position-1;
+        increment        = enc->max_position-1;
+        enc->position16 -= enc->increment16;
       }
       enc->position = (increment + enc->position) % enc->max_position;
       enc->direction  = result;
@@ -100,6 +102,10 @@ void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t p
   enc->position     = ppr >> 1;
   enc->max_position = ppr << 1;
   enc->max_hold     = hold;
+
+  // TODO: Get this math out of here
+  // ((65536 / target_max) * target_full_rotation) / ppr
+  enc->increment16  = ((65536 / 256) * 144) / enc->max_position;
 
   _io_rotary.active++;
 }
@@ -251,6 +257,10 @@ uint16_t Input_GetButtons(void) {
 
 uint16_t Input_GetRotaryPosition(uint16_t index) {
   return _io_rotary.encoders[index].position; }
+
+uint16_t Input_GetRotaryPosition16(uint16_t index) {
+  return _io_rotary.encoders[index].position16; }
+
 
 uint16_t Input_GetRotaryMaximum(uint16_t index) {
   return _io_rotary.encoders[index].max_position; }
