@@ -193,6 +193,5 @@ void Effect_Run(void) {
     effect->draw(effect);
     // Advance to the next effect
     effect = next;
-    PORTE ^= 0x40;
   }
 }
