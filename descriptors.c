@@ -33,10 +33,10 @@ USB_Descriptor_HIDReport_Datatype_t USBemaniDeviceReport[] = {
       HID_RI_USAGE(8, 0x38),            // Wheel
       HID_RI_USAGE(8, 0x32),            // Z
       HID_RI_USAGE(8, 0x35),            // Rz
-      HID_RI_LOGICAL_MINIMUM(16, 0),
-      HID_RI_LOGICAL_MAXIMUM(16, 255),  // Encoder Resolution [bytes 44, 45]
+      HID_RI_LOGICAL_MINIMUM(16, -32768),
+      HID_RI_LOGICAL_MAXIMUM(16,  32767),  // Encoder Resolution [bytes 44, 45]
       HID_RI_REPORT_COUNT(8, 5),
-      HID_RI_REPORT_SIZE(8, 8),
+      HID_RI_REPORT_SIZE(8, 16),
       HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_WRAP | HID_IOF_NO_PREFERRED_STATE),
     HID_RI_END_COLLECTION(0),
     // Buttons (16 bytes)
@@ -84,7 +84,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
 	.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
 	.VendorID               = 0x0573,
-	.ProductID              = 0xFFFF,
+	.ProductID              = 0xFFFE,
 	.ReleaseNumber          = VERSION_BCD(0,0,1),
 
 	.ManufacturerStrIndex   = STRING_ID_Manufacturer,
