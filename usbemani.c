@@ -41,12 +41,12 @@ void SetupEffects(void) {
   */
 
   /* Splash on all 9 buttons */
-  for (int i = 0; i < 12; i++) {
+  for (int i = 0; i < 9; i++) {
     ColorProvider_t *color = ColorProvider_Hue(
-      ((65535 / 12) * i) >> 8
+      ((65535 / 9) * i) >> 8
     );
     Effect_t    *key = Effect_Splash(color, 28 + (i << 2), 4);
-    Effect_Defer(key, Input_PtrButtons(), 1<<i);
+    Effect_Defer(key, Output_Ptr(), 1<<i);
   }
 }
 
