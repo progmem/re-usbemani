@@ -103,13 +103,14 @@ void Output_Task(void);
 
 uint16_t Input_Ticks(uint16_t index);
 uint16_t Input_GetButtons(void);
-uint16_t Input_GetRotaryPosition(uint16_t index);
-uint16_t Input_GetRotaryPosition16(uint16_t index);
+uint16_t Input_GetRotaryPhysicalPosition(uint16_t index);
+uint16_t Input_GetRotaryLogicalPosition(uint16_t index);
 uint16_t Input_GetRotaryMaximum(uint16_t index);
 uint16_t Input_GetRotaryDirection(uint16_t index);
 
 uint16_t*Input_PtrButtons(void);
-uint16_t*Input_PtrRotaryPosition(uint16_t index);
+uint16_t*Input_PtrRotaryPhysicalPosition(uint16_t index);
+uint16_t*Input_PtrRotaryLogicalPosition(uint16_t index);
 uint16_t*Input_PtrRotaryDirection(uint16_t index);
 
 uint16_t Output_Get(void);

@@ -4,7 +4,9 @@ uint8_t  hid_lights = 0;
 
 void SetupEffects(void) {
   // Turntable Ring, rainbow
-  ColorProvider_t *rainbow_cp = ColorProvider_RainbowVariable(24, Input_PtrRotaryPosition(0), Input_GetRotaryMaximum(0));
+  ColorProvider_t *rainbow_cp = ColorProvider_RainbowVariable(
+    24, Input_PtrRotaryPhysicalPosition(0), Input_GetRotaryMaximum(0)
+  );
   Effect_t        *rainbow    = Effect_Multi(rainbow_cp, 0, 24);
   Effect_AutoQueue(rainbow);
 
@@ -163,7 +165,7 @@ void EVENT_USB_Device_ControlRequest(void) {
         Endpoint_ClearSETUP();
 
         /* Write the report data to the control endpoint */
-        Endpoint_Write_Control_Stream_LE(&InputReport, sizeof(InputReport));
+        Endpoint_Write_Control_Stream_LE(&InputReport, sizeof(USBemani_Input_t));
         Endpoint_ClearOUT();
       }
 
@@ -175,7 +177,7 @@ void EVENT_USB_Device_ControlRequest(void) {
         Endpoint_ClearSETUP();
 
         /* Read the report data from the control endpoint */
-        Endpoint_Read_Control_Stream_LE(&OutputReport, sizeof(OutputReport));
+        Endpoint_Read_Control_Stream_LE(&OutputReport, sizeof(USBemani_Output_t));
         Endpoint_ClearIN();
 
         ProcessOutputReport(&OutputReport);
@@ -193,6 +195,21 @@ void ProcessOutputReport(USBemani_Output_t *Report) {
 void CreateInputReport(USBemani_Input_t *Report) {
   memset(Report, 0, sizeof(USBemani_Input_t));
 
+  /*
+  Report->LX = ((Input_GetButtons() & 0x01) ? -100 : 0); // Part of wheel
+  Report->LY = ((Input_GetButtons() & 0x02) ? -100 : 0); // Part of wheel
+  Report->RX = ((Input_GetButtons() & 0x04) ? -100 : 0); // Part of Z Axis
+  Report->RY = ((Input_GetButtons() & 0x08) ? -100 : 0); // Part of Z Axis
+
+  Report->Rotary[0] = ((Input_GetButtons() & 0x10) ? 32767 : 0); // Rz
+  Report->Rotary[1] = ((Input_GetButtons() & 0x20) ? 32767 : 0); // Buttons
+  Report->Rotary[2] = ((Input_GetButtons() & 0x40) ? 32767 : 0); // X/Y
+  Report->Rotary[3] = ((Input_GetButtons() & 0x80) ? 32767 : 0);  // X/Y Rotation
+  Report->Rotary[4] = ((Input_GetButtons() & 0x100) ? 32767 : 0); // Slider
+
+  Report->Button    = (Input_GetButtons() & 0xFFE0);
+  */
+
   if (Input_GetRotaryDirection(0)) {
     Report->LX = -100;
     if (Input_GetRotaryDirection(0) == INPUT_ROTARY_CW)
@@ -205,11 +222,11 @@ void CreateInputReport(USBemani_Input_t *Report) {
       Report->LY = 100;
   }
 
-  Report->Slider  = Input_GetRotaryPosition16(0);
-  Report->Dial    = Input_GetRotaryPosition16(1);
-  Report->Wheel   = Input_GetRotaryPosition16(2);
-  Report->Z       = Input_GetRotaryPosition16(3);
-  Report->RZ      = Input_GetRotaryPosition16(4);
+  Report->Slider  = Input_GetRotaryLogicalPosition(0);
+  Report->Dial    = Input_GetRotaryLogicalPosition(1);
+  Report->Wheel   = Input_GetRotaryLogicalPosition(2);
+  Report->Z       = Input_GetRotaryLogicalPosition(3);
+  Report->RZ      = Input_GetRotaryLogicalPosition(4);
   Report->Button  = Input_GetButtons();
 
 }
