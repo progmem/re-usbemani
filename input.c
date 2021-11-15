@@ -103,11 +103,20 @@ void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t p
   enc->max_position = ppr << 1;
   enc->max_hold     = hold;
 
-  // TODO: Get this math out of here
-  // ((65536 / target_max) * target_full_rotation) / ppr
-  enc->increment16  = ((65536 / 256) * 144) / enc->max_position;
+  enc->increment16  = 65536 / enc->max_position;
 
   _io_rotary.active++;
+}
+
+void Input_SetRotaryLogicalTarget(uint16_t index, uint16_t logical_max, uint16_t logical_per_rotation) {
+  if (!logical_max || !logical_per_rotation) return;
+
+  Input_Rotary_t *enc = &(_io_rotary.encoders[index]);
+
+  if (logical_max == logical_per_rotation)
+    enc->increment16  = 65536 / enc->max_position;
+  else
+    enc->increment16 = ((65536 / logical_max) * logical_per_rotation) / enc->max_position;
 }
 
 void Output_RegisterLatch(INPUT_PIN_INDEX pin) {

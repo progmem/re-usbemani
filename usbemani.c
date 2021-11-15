@@ -94,6 +94,9 @@ void SetupReferenceHardware(void) {
   // Rotary Encoders
   Input_RegisterRotary(PIN_F0, PIN_F1, 50, 2000);
   Input_RegisterRotary(PIN_F4, PIN_F5, 50, 2000);
+  Input_SetRotaryLogicalTarget(0, 256, 144);
+  Input_SetRotaryLogicalTarget(0, 256, 72);
+
   // Buttons
   Input_RegisterButton(PIN_D0);
   Input_RegisterButton(PIN_D1);

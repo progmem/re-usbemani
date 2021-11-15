@@ -84,13 +84,6 @@ typedef struct {
   uint8_t   precalc_high[3];
 } Output_Pins_t;
 
-/*
-extern Input_Encoders_t _io_rotary;
-extern Input_Buttons_t  _io_buttons;
-extern Output_Pins_t    _io_outputs;
-extern uint8_t          _io_ticks;
-*/
-
 void Input_RegisterButton(INPUT_PIN_INDEX pin);
 void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t ppr, uint16_t hold);
 
@@ -108,6 +101,8 @@ uint16_t Input_GetRotaryLogicalPosition(uint16_t index);
 uint16_t Input_GetRotaryMaximum(uint16_t index);
 uint16_t Input_GetRotaryDirection(uint16_t index);
 
+void Input_SetRotaryLogicalTarget(uint16_t index, uint16_t logical_max, uint16_t logical_per_rotation);
+
 uint16_t*Input_PtrButtons(void);
 uint16_t*Input_PtrRotaryPhysicalPosition(uint16_t index);
 uint16_t*Input_PtrRotaryLogicalPosition(uint16_t index);
@@ -117,3 +112,25 @@ uint16_t Output_Get(void);
 void     Output_Set(uint16_t data);
 uint16_t*Output_Ptr(void);
 __attribute__((weak)) void Input_ExecuteOnInterrupt(void);
+
+/*
+IO_Init
+
+IOPointer_Button
+IOPointer_RotaryPositionPhysical
+IOPointer_RotaryPositionLogical
+IOPointer_RotaryDirection
+IOPointer_Output
+
+Button_Add
+Button_Get
+
+Rotary_Add
+Rotary_ConfigureLogical
+Rotary_Direction
+Rotary_PositionPhysical
+Rotary_PositionLogical
+
+Output_Get
+Output_Set
+*/
