@@ -9,8 +9,13 @@ uint8_t QuietTime = 0;
 PS2_InputList_t *PS2Input = NULL;
 // Current PS2 state.
 void (*PS2Handler)(uint8_t) = NULL;
+// Invert mask for PS2 data.
+uint8_t InvertMask = 0x00;
 
 
+inline uint8_t ps2_byte(uint8_t data) {
+  return data ^ InvertMask;
+}
 
 void PS2_Acknowledge(void) {
   // Burn a few cycles before acknowledging
@@ -39,7 +44,7 @@ void PS2_Listen(uint8_t in) {
   // Report as a digital controller when addressed
   if (in == 0x01) {
     PS2_Acknowledge();
-    SPDR = ~(0x41);
+    SPDR = ps2_byte(0x41);
     PS2Handler = PS2_Addressed;
     return;
   // Otherwise, ignore all incoming traffic until our task performs a reset
@@ -52,7 +57,7 @@ void PS2_Listen(uint8_t in) {
 // When polling is requested, begin responding
 void PS2_Addressed(uint8_t in) {
   if (in == 0x42) {
-    SPDR = ~(0x5A);
+    SPDR = ps2_byte(0x5A);
     PS2Handler = PS2_HeaderFinished;
     PS2_Acknowledge();
   }
@@ -62,7 +67,7 @@ void PS2_Addressed(uint8_t in) {
 void PS2_HeaderFinished(uint8_t in) {
   uint8_t *data = (uint8_t *)&Data;
 
-  SPDR = ~(*data);
+  SPDR = ps2_byte(*data);
   PS2Handler = PS2_LowerSent;
   PS2_Acknowledge();
 }
@@ -71,13 +76,15 @@ void PS2_HeaderFinished(uint8_t in) {
 void PS2_LowerSent(uint8_t in) {
   uint8_t *data = (uint8_t *)&Data + 1;
 
-  SPDR = ~(*data);
+  SPDR = ps2_byte(*data);
   PS2Handler = PS2_Listen;
   PS2_Acknowledge();
 }
 
-void PS2_Init(void) {
+void PS2_Init(uint8_t invert) {
   cli();
+
+  InvertMask = invert;
 
   PORTC &= ~0x40;
   PS2_Acknowledge();
@@ -93,7 +100,7 @@ void PS2_Init(void) {
         | (1 << SPE);
 
   // Set the first byte up
-  SPDR = 0x00;
+  SPDR = ps2_byte(0xFF);
   PS2Handler = PS2_Listen;
   sei();
 }
@@ -104,7 +111,7 @@ void PS2_Task(void) {
   if (PINB & 0x01) {
     QuietTime = 0;
     DDRB |= 0x08;
-    SPDR  = 0x00;
+    SPDR  = ps2_byte(0x00);
   }
 
   PS2_InputList_t *map = PS2Input;

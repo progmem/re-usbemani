@@ -32,7 +32,7 @@ struct PS2_InputList_t {
   PS2_InputList_t *parent;
 };
 
-void PS2_Init(void);
+void PS2_Init(uint8_t invert);
 void PS2_Task(void);
 
 void PS2_MapInput(uint16_t *input, uint16_t mask, PS2_INPUT buttons);

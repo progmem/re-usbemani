@@ -125,8 +125,8 @@ void SetupReferenceHardware(void) {
   PS2_MapInput(Input_PtrButtons(), (1 << 8), PS2_START);
   PS2_MapInput(Input_PtrRotaryDirection(0), INPUT_ROTARY_CCW, PS2_UP);
   PS2_MapInput(Input_PtrRotaryDirection(0), INPUT_ROTARY_CW,  PS2_DOWN);
-  // PS2 Init
-  PS2_Init();
+  // PS2 Init (with transistor)
+  PS2_Init(0xFF);
 }
 
 void SetupHardware(void) {
