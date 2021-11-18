@@ -29,3 +29,45 @@ USBemani is a fairly old project, and has been in need of a rewrite for some tim
   * Input configuration, allowing for the mapping of buttons and encoders to pins.
   * Button mapping for PS1/PS2, including the configuration of an "identity quirk" for games that require it as well as the mapping of a single button to one or more PS1/PS2 buttons.
   * RGB effects, allowing for effects to be built by dictating what controls the effect, what inputs are involved in that effect, and where that effect should be drawn. The plan is to provide a number of available effects and color providers built-in, with the configuration tool offering both common usecases as well as full customization.
+
+## Building USBemani
+
+First, make sure you have an up-to-date version of `avr-gcc`. This documentation does not cover the installation of `avr-gcc` as this can differ between Windows, Linux, and macOS platforms. Once installed, clone this repository, making sure to include submodules:
+
+```
+git clone --recursive https://github.com/progmem/re-usbemani.git
+```
+
+Navigate into the folder this code was cloned to, then run the following to build:
+
+```
+make clean all
+```
+
+By default, this will build the **reference firmware**, which provides the following:
+
+* 2 rotary encoders, on pins F0 and F1 (1); and pins F4 and F5 (2)
+* 12 buttons, on pins D0-D8 and B4-B7.
+* PS1 and PS2 support, using the SPI pins B0-B3.
+  * Pin C6 is used to provide the Sony-specific "acknowledge" line.
+  * Buttons are mapped to match that of a IIDX controller (keys 1-7, select, start).
+  * Rotary encoder 1 is used for the turntable.
+* Traditional LED lighting using the following components for **latched output**:
+  * Two SN74HCT573NSR, which cover up to 8 outputs each.
+    * Solder each input pin from the chip to any one of the button input pins (one latch input pin per AVR input pin). 
+    * Solder the latch enable pin from each chip to pin F7 on the AVR.
+    * Solder the output enable pin to ground.
+  * One 10k resistor per button.
+    * Solder one leg of the resistor to any one of the button input pins.
+    * Connect the other leg of the resistor to your button, via pin header, wire, etc.
+  * One 22k resistor.
+    * Solder one leg of the resistor to pin F7 on the AVR.
+    * Solder the other leg of the resistor to ground.
+* RGB lighting, on pin C7, supporting 144 LEDs at ~30FPS. The default pattern consists of:
+  * A ring of 24 LEDs with a rainbow gradient. When the first rotary encoder rotates, so does the turntable. This uses the effects queuing system.
+  * 4 LEDs per button, for a total of 48 LEDs. Each group of LEDs lights up when the button is help, broadcasting an additional splash pattern outward with decay. This uses the effects queuing system.
+  * A comet pattern from LEDs 81-144. This uses the effects queuing system, but the effect is manipulated manually after every RGB draw.
+
+If building for use on a Pro Micro, only pin C6 is exposed. This means that only PS2 or RGB is supported:
+* If RGB support is desired, uncomment the `CC_FLAGS` line in the `Makefile`.
+* If PS2 support is desired, leave this line commented. Please note that you will need to solder an additional on the `RXLED` resistor, on the side closest to the edge of the board. This line is used as the SS/Attention line.

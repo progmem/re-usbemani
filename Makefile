@@ -9,6 +9,11 @@ LUFA_PATH    = ./lufa/LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -Ilufa_config/ -Werror -Wall
 LD_FLAGS     =
 
+# RGB data is available on pin C7.
+# PS2 acknowledgement is available on pin C6.
+# Uncomment this line if you need to swap (RGB/C6, PS2/C7).
+# CC_FLAGS    := $(CC_FLAGS) -DUSBEMANI_C6_RGB
+
 # Default target
 all: build
 
