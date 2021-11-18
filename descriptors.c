@@ -156,9 +156,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
 const USB_Descriptor_String_t PROGMEM LanguageString = USB_STRING_DESCRIPTOR_ARRAY(LANGUAGE_ID_ENG);
 const USB_Descriptor_String_t PROGMEM ManufacturerString = USB_STRING_DESCRIPTOR(L"@progmem");
 
-const USB_Descriptor_String_t PROGMEM ProductString       = USB_STRING_DESCRIPTOR(L"USBemani");
-const USB_Descriptor_String_t PROGMEM ProductString1P     = USB_STRING_DESCRIPTOR(L"USBemani [1P]");
-const USB_Descriptor_String_t PROGMEM ProductString2P     = USB_STRING_DESCRIPTOR(L"USBemani [2P]");
+const USB_Descriptor_String_t PROGMEM ProductString       = USB_STRING_DESCRIPTOR(L"USBemani v3");
       USB_Descriptor_String_t         ProductStringCustom = USB_STRING_DESCRIPTOR(L"Custom String Goes Here!");
 
 uint16_t CALLBACK_USB_GetDescriptor(
@@ -196,8 +194,8 @@ uint16_t CALLBACK_USB_GetDescriptor(
 					Size    = pgm_read_byte(&ManufacturerString.Header.Size);
 					break;
 				case STRING_ID_Product:
-					Address = &ProductString1P;
-					Size    = pgm_read_byte(&ProductString1P.Header.Size);
+					Address = &ProductString;
+					Size    = pgm_read_byte(&ProductString.Header.Size);
 					break;
 			}
 

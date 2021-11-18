@@ -1,5 +1,11 @@
 #include "rgb.h"
 
+#ifdef USBEMANI_C6_RGB
+#define RGB_PIN "6"
+#else
+#define RGB_PIN "7"
+#endif
+
 typedef enum {
   RGB_DIRTY   = 0x01,
   RGB_SYNCED  = 0x02,
@@ -100,10 +106,10 @@ ISR(TIMER1_COMPA_vect) {
 
   uint8_t bit_test = (*transmit.data & transmit.bitmask);
 
-  asm("sbi 0x08, 7");
+  asm("sbi 0x08, " RGB_PIN);
   if (bit_test)
     asm("nop\nnop\nnop\nnop");
-  asm("cbi 0x08, 7");
+  asm("cbi 0x08, " RGB_PIN);
 
   if (transmit.bitmask & 0x01)
     transmit.data++;

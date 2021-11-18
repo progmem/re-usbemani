@@ -1,5 +1,11 @@
 #include "ps2.h"
 
+#ifdef USBEMANI_C6_RGB
+#define PS2ACK_PIN 0x80
+#else
+#define PS2ACK_PIN 0x40
+#endif
+
 // Stores a constructed packet for the PS2.
 uint16_t Data = 0;
 // When set, ignore all data until chip select goes high again
@@ -7,11 +13,12 @@ uint16_t Data = 0;
 uint8_t QuietTime = 0;
 // List of available PS2 inputs.
 PS2_InputList_t *PS2Input = NULL;
+
 // Current PS2 state.
 void (*PS2Handler)(uint8_t) = NULL;
+
 // Invert mask for PS2 data.
 uint8_t InvertMask = 0x00;
-
 
 inline uint8_t ps2_byte(uint8_t data) {
   return data ^ InvertMask;
@@ -22,7 +29,7 @@ void PS2_Acknowledge(void) {
   asm volatile(
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
   );
-  DDRC  |=  0x40;
+  DDRC  |=  PS2ACK_PIN;
   // 40 cycles of delay should give us the same delay as a real PS1 controller
   asm volatile(
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
@@ -31,9 +38,10 @@ void PS2_Acknowledge(void) {
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
   );
-  DDRC  &= ~0x40;
+  DDRC  &= ~(PS2ACK_PIN);
 }
 
+// Default implementation methods
 void PS2_Listen(uint8_t in);
 void PS2_Addressed(uint8_t in);
 void PS2_HeaderFinished(uint8_t in);
@@ -43,15 +51,14 @@ void PS2_LowerSent(uint8_t in);
 void PS2_Listen(uint8_t in) {
   // Report as a digital controller when addressed
   if (in == 0x01) {
-    PS2_Acknowledge();
     SPDR = ps2_byte(0x41);
     PS2Handler = PS2_Addressed;
+    PS2_Acknowledge();
     return;
-  // Otherwise, ignore all incoming traffic until our task performs a reset
-  } else {
-    DDRB &= ~0x08;
-    QuietTime = 1;
   }
+  // Otherwise, ignore all incoming traffic until our task performs a reset
+  DDRB &= ~0x08;
+  QuietTime = 255;
 }
 
 // When polling is requested, begin responding
@@ -86,7 +93,7 @@ void PS2_Init(uint8_t invert) {
 
   InvertMask = invert;
 
-  PORTC &= ~0x40;
+  PORTC &= ~(PS2ACK_PIN);
   PS2_Acknowledge();
   // Set MISO as an output pin
   DDRB |= 0x08;
@@ -101,17 +108,19 @@ void PS2_Init(uint8_t invert) {
 
   // Set the first byte up
   SPDR = ps2_byte(0xFF);
+  // Setup our default and current handlers
   PS2Handler = PS2_Listen;
+  // Re-enable interrupts
   sei();
 }
 
 // Update the stored data packet
 void PS2_Task(void) {
-  // If chip select is disabled (high), quiet time is over. Reset state.
+  // If chip select is high (not selected), quiet time is over. Reset state.
   if (PINB & 0x01) {
     QuietTime = 0;
     DDRB |= 0x08;
-    SPDR  = ps2_byte(0x00);
+    SPDR  = ps2_byte(0xFF);
   }
 
   PS2_InputList_t *map = PS2Input;
