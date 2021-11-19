@@ -13,6 +13,7 @@ struct {
 } framebuffer;
 
 struct {
+  uint8_t  pin_c7;
   uint8_t *data;
   uint8_t  bitmask;
   uint16_t index;
@@ -21,14 +22,15 @@ struct {
   RGB_Flags state;
 } transmit;
 
-void RGB_Init(uint8_t quantity) {
+void RGB_Init(RGB_PIN pin, uint8_t quantity) {
   if (framebuffer.data) free(framebuffer.data);
 
   framebuffer.size  = quantity;
   framebuffer.data  = calloc(quantity, sizeof(RGB_Color_t));
 
-  transmit.size  = quantity * 24;
-  transmit.ticks = 0;
+  transmit.pin_c7 = pin;
+  transmit.size   = quantity * 24;
+  transmit.ticks  = 0;
 
   // Make sure we can output a signal
   DDRC  |=  0x80,
@@ -98,18 +100,26 @@ ISR(TIMER1_COMPA_vect) {
     return;
   }
 
-  uint8_t bit_test = (*transmit.data & transmit.bitmask);
-
-  asm("sbi 0x08, 7");
-  if (bit_test)
-    asm("nop\nnop\nnop\nnop");
-  asm("cbi 0x08, 7");
+  register uint8_t bit_test = (*transmit.data & transmit.bitmask);
 
   if (transmit.bitmask & 0x01)
     transmit.data++;
 
   transmit.index++;
   transmit.bitmask = bitmasks[transmit.index & 0x07];
+
+  if(transmit.pin_c7) {
+    asm("sbi 0x08, 7");
+    if (bit_test)
+      asm("nop\nnop\nnop\nnop");
+    asm("cbi 0x08, 7");
+    return;
+  }
+
+  asm("sbi 0x08, 6");
+  if (bit_test)
+    asm("nop\nnop\nnop\nnop");
+  asm("cbi 0x08, 6");
 }
 
 void RGB_SetRange(RGB_Color_t color, uint8_t index, uint8_t size) {

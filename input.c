@@ -66,9 +66,11 @@ static inline void process_rotary(void) {
     if (result) {
       uint8_t increment;
       if (result == INPUT_ROTARY_CW) {
-        increment = enc->max_position+1;
+        increment        = enc->max_position+1;
+        enc->position16 += enc->increment16;
       } else {
-        increment = enc->max_position-1;
+        increment        = enc->max_position-1;
+        enc->position16 -= enc->increment16;
       }
       enc->position = (increment + enc->position) % enc->max_position;
       enc->direction  = result;
@@ -101,7 +103,20 @@ void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t p
   enc->max_position = ppr << 1;
   enc->max_hold     = hold;
 
+  enc->increment16  = 65536 / enc->max_position;
+
   _io_rotary.active++;
+}
+
+void Input_SetRotaryLogicalTarget(uint16_t index, uint16_t logical_max, uint16_t logical_per_rotation) {
+  if (!logical_max || !logical_per_rotation) return;
+
+  Input_Rotary_t *enc = &(_io_rotary.encoders[index]);
+
+  if (logical_max == logical_per_rotation)
+    enc->increment16  = 65536 / enc->max_position;
+  else
+    enc->increment16 = ((65536 / logical_max) * logical_per_rotation) / enc->max_position;
 }
 
 void Output_RegisterLatch(INPUT_PIN_INDEX pin) {
@@ -249,8 +264,12 @@ uint16_t Input_Ticks(uint16_t index) {
 uint16_t Input_GetButtons(void) {
   return _io_buttons.data; }
 
-uint16_t Input_GetRotaryPosition(uint16_t index) {
+uint16_t Input_GetRotaryPhysicalPosition(uint16_t index) {
   return _io_rotary.encoders[index].position; }
+
+uint16_t Input_GetRotaryLogicalPosition(uint16_t index) {
+  return _io_rotary.encoders[index].position16; }
+
 
 uint16_t Input_GetRotaryMaximum(uint16_t index) {
   return _io_rotary.encoders[index].max_position; }
@@ -261,8 +280,11 @@ uint16_t Input_GetRotaryDirection(uint16_t index) {
 uint16_t*Input_PtrButtons(void) {
   return &(_io_buttons.data); }
 
-uint16_t*Input_PtrRotaryPosition(uint16_t index) {
+uint16_t*Input_PtrRotaryPhysicalPosition(uint16_t index) {
   return &(_io_rotary.encoders[index].position); }
+
+uint16_t*Input_PtrRotaryLogicalPosition(uint16_t index) {
+  return &(_io_rotary.encoders[index].position16); }
 
 uint16_t*Input_PtrRotaryDirection(uint16_t index) {
   return &(_io_rotary.encoders[index].direction); }

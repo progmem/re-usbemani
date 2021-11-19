@@ -4,6 +4,16 @@
 #include <avr/interrupt.h>
 
 typedef enum {
+  PS2_C6 = 0x40,
+  PS2_C7 = 0x80,
+} PS2_PIN;
+
+typedef enum {
+  PS2_DIRECT     = 0x00,
+  PS2_TRANSISTOR = 0xFF,
+} PS2_INVERT;
+
+typedef enum {
   PS2_NC        = 0,
   PS2_SELECT    = (1 << 0),
   PS2_L3        = (1 << 1),
@@ -32,7 +42,7 @@ struct PS2_InputList_t {
   PS2_InputList_t *parent;
 };
 
-void PS2_Init(uint8_t invert);
+void PS2_Init(PS2_PIN pin, PS2_INVERT invert);
 void PS2_Task(void);
 
 void PS2_MapInput(uint16_t *input, uint16_t mask, PS2_INPUT buttons);
