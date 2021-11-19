@@ -1,11 +1,7 @@
 #include "ps2.h"
 
-#ifdef USBEMANI_C6_RGB
-#define PS2ACK_PIN 0x80
-#else
-#define PS2ACK_PIN 0x40
-#endif
-
+// Pin mask to setup
+uint8_t PinMask = 0;
 // Stores a constructed packet for the PS2.
 uint16_t Data = 0;
 // When set, ignore all data until chip select goes high again
@@ -29,7 +25,7 @@ void PS2_Acknowledge(void) {
   asm volatile(
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
   );
-  DDRC  |=  PS2ACK_PIN;
+  DDRC  |=  PinMask;
   // 40 cycles of delay should give us the same delay as a real PS1 controller
   asm volatile(
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
@@ -38,7 +34,7 @@ void PS2_Acknowledge(void) {
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
     "nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
   );
-  DDRC  &= ~(PS2ACK_PIN);
+  DDRC  &= ~(PinMask);
 }
 
 // Default implementation methods
@@ -88,12 +84,13 @@ void PS2_LowerSent(uint8_t in) {
   PS2_Acknowledge();
 }
 
-void PS2_Init(uint8_t invert) {
+void PS2_Init(PS2_PIN pin, PS2_INVERT invert) {
   cli();
 
+  PinMask    = pin;
   InvertMask = invert;
 
-  PORTC &= ~(PS2ACK_PIN);
+  PORTC &= ~(PinMask);
   PS2_Acknowledge();
   // Set MISO as an output pin
   DDRB |= 0x08;

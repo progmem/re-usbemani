@@ -6,7 +6,12 @@
 #include <avr/interrupt.h>
 #include "color.h"
 
-void RGB_Init(uint8_t quantity);
+typedef enum {
+  RGB_C6 = 0x00,
+  RGB_C7 = 0x01,
+} RGB_PIN;
+
+void RGB_Init(RGB_PIN pin, uint8_t quantity);
 void RGB_Transmit(void);
 bool RGB_Ready(void);
 void RGB_Sync(void);

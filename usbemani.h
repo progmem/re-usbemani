@@ -42,6 +42,7 @@ typedef struct {
 } USBemani_Output_t;
 
 void SetupHardware(void);
+void SetupEffects(void);
 void HID_Task(void);
 
 void EVENT_USB_Device_Connect(void);
