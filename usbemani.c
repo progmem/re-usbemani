@@ -113,9 +113,18 @@ void SetupHardware(void) {
   // It is advised to leave this at the default 8kHz.
   InputOutput_Begin(INPUT_FREQ_8KHZ);
   // The PS2 "Acknowledge" line is available on either C6 or C7.
-  // If you run at 5v, you will need to indicate PS2_TRANSISTOR.
-  // Additionally, use a transistor on the MISO line.
-  // If you run at 3.3v or don't use a transistor, indicate PS2_DIRECT.
+  // Indicate which pin you want to use here.
+  // Additionally, indicate how MISO will be used for the PS2.
+  // * PS2_TRANSISTOR is the most reliable method, requiring an N-Channel MOSFET or transistor.
+  //    * Connect the AVR MISO pin to the base/gate.
+  //    * Connect the PS2 MISO pin to the collector/drain.
+  //    * Connect the emitter/source to ground.
+  //    * The BS170 N-Channel MOSFET works well with no gate resistor.
+  // * PS2_DIRECT can be used if running at 3.3V.
+  //    * This will provide varying levels of success based on a number of factors.
+  //    * Cable quality and the presence of a ferrite core are factors that come to play.
+  //    * A generic PS1 extension with no ferrites can work better than Konami's cable!
+  //    * If PS2_DIRECT doesn't work for you, you must use PS2_TRANSISTOR.
   PS2_Init(PS2_C6, PS2_TRANSISTOR);
   // RGB is available on C6 or C7.
   // Indicate which pin and the number of LEDs to be used.
