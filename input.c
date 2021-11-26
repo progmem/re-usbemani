@@ -1,4 +1,8 @@
 #include "input.h"
+#define SETUP_PIN_MASK(x) (1 << (x & 0x07))
+
+static inline void Output_Task_Direct(void);
+static inline void Output_Task_Latch(void);
 
 const uint8_t rotary_lookup[6][4] = {
   {0x3 , 0x2, 0x1,  0x0}, {0x23, 0x0, 0x1,  0x0},
@@ -14,36 +18,17 @@ Input_Buttons_t _io_buttons = {
   .active = 0,
 };
 
+Input_Analog_t _io_analog = {
+  .active = 0,
+};
+
 Output_Pins_t _io_outputs = {
   .active = 0,
   .latch_group = PIN_NC,
 };
 
 uint16_t _io_ticks = 0;
-
-static inline void Output_Task_Direct(void);
-static inline void Output_Task_Latch(void);
-
-
-
-uint8_t raw_input[3];
-
-#define SETUP_PIN_MASK(x) (1 << (x & 0x07))
-void setup_pin(INPUT_PIN_INDEX pin) {
-  switch(pin & 0x18) {
-    case 0x10:  // PORTF
-      DDRF  &= ~SETUP_PIN_MASK(pin);
-      PORTF |=  SETUP_PIN_MASK(pin);
-      break;
-    case 0x08:  // PORTD
-      DDRD  &= ~SETUP_PIN_MASK(pin);
-      PORTD |=  SETUP_PIN_MASK(pin);
-      break;
-    default:    // PORTB
-      DDRB  &= ~SETUP_PIN_MASK(pin);
-      PORTB |=  SETUP_PIN_MASK(pin);
-  }
-}
+uint8_t  raw_input[3];
 
 static inline void process_rotary(void) {
   for (uint8_t i = 0; i < _io_rotary.active; i++) {
@@ -79,13 +64,74 @@ static inline void process_rotary(void) {
   }
 }
 
+
+static inline void process_analog(void) {
+  static uint8_t index = 0;
+
+  if (ADCSRA & (1 << ADSC)) return;
+
+  // Read the top 8 bits and store in the currently-polled analog value
+  _io_analog.raw[index] = ADCH;
+
+  if (_io_analog.invert & (1 << index))
+    _io_analog.raw[index] = 255 - _io_analog.raw[index];
+
+  // Perform analog-to-input conversion
+  if (_io_analog.raw[index] > _io_analog.trigger[index])
+    _io_analog.digital |=  (1 << index);
+  if (_io_analog.raw[index] < _io_analog.release[index])
+    _io_analog.digital &= ~(1 << index);
+
+  // Switch pins
+  ADMUX  &= ~(_io_analog.mask[index] & 0x07);
+  ADCSRB &= ~(_io_analog.mask[index] & 0x20);
+  ++index; if (index >= _io_analog.active) index = 0;
+  ADMUX  |=  (_io_analog.mask[index] & 0x07);
+  ADCSRB |=  (_io_analog.mask[index] & 0x20);
+
+  // Begin conversion of the next pin
+  ADCSRA |= (1<<ADSC);
+}
+
+void setup_pin(INPUT_PIN_INDEX pin) {
+  switch(pin & 0x18) {
+    case 0x10:  // PORTF
+      DDRF  &= ~SETUP_PIN_MASK(pin);
+      PORTF |=  SETUP_PIN_MASK(pin);
+      break;
+    case 0x08:  // PORTD
+      DDRD  &= ~SETUP_PIN_MASK(pin);
+      PORTD |=  SETUP_PIN_MASK(pin);
+      break;
+    default:    // PORTB
+      DDRB  &= ~SETUP_PIN_MASK(pin);
+      PORTB |=  SETUP_PIN_MASK(pin);
+  }
+}
+
 void Input_RegisterButton(INPUT_PIN_INDEX pin) {
   setup_pin(pin);
 
   _io_buttons.group[_io_buttons.active] = (pin >> 3);
   _io_buttons.mask[_io_buttons.active]  = (1 << (pin & 0x07));
 
-  _io_buttons.active++;
+  ++_io_buttons.active;
+}
+
+void Input_RegisterAnalog(ANALOG_PIN_INDEX pin, ANALOG_SHOULD_INVERT invert) {
+  // Enable analog subsystem, if it isn't already.
+  if (pin & 0x20)
+    DIDR2 |= (1 << (pin & 0x07));
+  else
+    DIDR0 |= (1 << (pin & 0x07));
+
+  _io_analog.mask[_io_analog.active] = pin;
+  _io_analog.raw[ _io_analog.active] = 0;
+
+  if (invert)
+    _io_analog.invert |= (1 << _io_analog.active);
+
+  _io_analog.active++;
 }
 
 void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t ppr, uint16_t hold) {
@@ -105,10 +151,10 @@ void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t p
 
   enc->increment16  = 65536 / enc->max_position;
 
-  _io_rotary.active++;
+  ++_io_rotary.active;
 }
 
-void Input_SetRotaryLogicalTarget(uint16_t index, uint16_t logical_max, uint16_t logical_per_rotation) {
+void Input_RotaryLogicalTarget(uint8_t index, uint16_t logical_max, uint16_t logical_per_rotation) {
   if (!logical_max || !logical_per_rotation) return;
 
   Input_Rotary_t *enc = &(_io_rotary.encoders[index]);
@@ -117,6 +163,11 @@ void Input_SetRotaryLogicalTarget(uint16_t index, uint16_t logical_max, uint16_t
     enc->increment16  = 65536 / enc->max_position;
   else
     enc->increment16 = ((65536 / logical_max) * logical_per_rotation) / enc->max_position;
+}
+
+void Input_SetAnalogRange(uint8_t index, uint8_t trigger, uint8_t release) {
+  _io_analog.trigger[index] = trigger,
+  _io_analog.release[index] = release;
 }
 
 void Output_RegisterLatch(INPUT_PIN_INDEX pin) {
@@ -145,7 +196,7 @@ void InputOutput_Begin(INPUT_FREQUENCY freq) {
     enc->position = 0;
   }
 
-  // Setup interrupt
+  // Setup digital interrupt
   TCCR0A  = 0,
   TCCR0B  = 0,
   TCNT0   = 0,
@@ -153,6 +204,22 @@ void InputOutput_Begin(INPUT_FREQUENCY freq) {
   TCCR0A |= (1 << WGM01),
   TCCR0B |= (1 << CS01) | (1 << CS00),
   TIMSK0 |= (1 << OCIE0A);
+
+  // Setup analog
+  if (_io_analog.active) {
+    // Enable ADC
+    ADCSRA  |= (1<<ADEN);
+    // Set prescaler
+    ADCSRA  |= (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);
+    // Left-shift data
+    // Use VCC
+    ADMUX   |= (1<<ADLAR) | (1<<REFS0);
+    // Clear multiplexers
+    ADMUX   &= ~((1<<MUX0) | (1<<MUX1) | (1<<MUX2));
+    ADCSRB  &= ~( 1<<MUX5);
+    // Enable capture
+    ADCSRA  |=  (1<<ADSC);
+  }
 
   sei();
 }
@@ -229,33 +296,7 @@ static inline void Output_Task_Latch() {
   PORTF |=  _io_outputs.precalc_low[2];
 }
 
-ISR(TIMER0_COMPA_vect) {
-  static volatile uint8_t index = 0;
-
-  // Read pins
-  raw_input[0] = PINB,
-  raw_input[1] = PIND,
-  raw_input[2] = PINF;
-
-  // Update rotary encoders every cycle
-  process_rotary();
-
-  index++;
-
-  if ((index & 0x07) == 0x07) {
-    if (_io_outputs.latch_group ^ PIN_NC)
-      Output_Task_Latch();
-    else
-      Output_Task_Direct();
-  }
-
-  if ((index & 0x7f) == 0x7f) {
-    Input_ExecuteOnInterrupt();
-    _io_ticks++;
-  }
-}
-
-uint16_t Input_Ticks(uint16_t index) {
+uint16_t Input_Ticks(uint8_t index) {
   if(index)
     return (_io_ticks % index);
   return _io_ticks;
@@ -264,31 +305,42 @@ uint16_t Input_Ticks(uint16_t index) {
 uint16_t Input_GetButtons(void) {
   return _io_buttons.data; }
 
-uint16_t Input_GetRotaryPhysicalPosition(uint16_t index) {
+uint16_t Input_GetRotaryPhysicalPosition(uint8_t index) {
   return _io_rotary.encoders[index].position; }
 
-uint16_t Input_GetRotaryLogicalPosition(uint16_t index) {
+uint16_t Input_GetRotaryLogicalPosition(uint8_t index) {
   return _io_rotary.encoders[index].position16; }
 
-
-uint16_t Input_GetRotaryMaximum(uint16_t index) {
+uint16_t Input_GetRotaryMaximum(uint8_t index) {
   return _io_rotary.encoders[index].max_position; }
 
-uint16_t Input_GetRotaryDirection(uint16_t index) {
+uint16_t Input_GetRotaryDirection(uint8_t index) {
   return _io_rotary.encoders[index].direction; }
+
+uint16_t Input_GetAnalog(uint8_t index) {
+  return _io_analog.raw[index]; }
+
+uint16_t Input_GetAnalogDigital(void) {
+  return _io_analog.digital; }
+
 
 uint16_t*Input_PtrButtons(void) {
   return &(_io_buttons.data); }
 
-uint16_t*Input_PtrRotaryPhysicalPosition(uint16_t index) {
+uint16_t*Input_PtrRotaryPhysicalPosition(uint8_t index) {
   return &(_io_rotary.encoders[index].position); }
 
-uint16_t*Input_PtrRotaryLogicalPosition(uint16_t index) {
+uint16_t*Input_PtrRotaryLogicalPosition(uint8_t index) {
   return &(_io_rotary.encoders[index].position16); }
 
-uint16_t*Input_PtrRotaryDirection(uint16_t index) {
+uint16_t*Input_PtrRotaryDirection(uint8_t index) {
   return &(_io_rotary.encoders[index].direction); }
 
+uint16_t*Input_PtrAnalog(uint8_t index) {
+  return &(_io_analog.raw[index]); }
+
+uint16_t*Input_PtrAnalogDigital(void) {
+  return &(_io_analog.digital); }
 
 
 uint16_t Output_Get(void) {
@@ -301,3 +353,34 @@ void Output_Set(uint16_t data) {
   _io_outputs.data = data; }
 
 __attribute__((weak)) void Input_ExecuteOnInterrupt(void) { }
+
+// Interrupt that processes inputs
+ISR(TIMER0_COMPA_vect) {
+  static volatile uint8_t ticks = 0;
+
+  // Read pins
+  raw_input[0] = PINB,
+  raw_input[1] = PIND,
+  raw_input[2] = PINF;
+
+  // Update rotary encoders every cycle
+  process_rotary();
+  ticks++;
+
+  // Handle outputs
+  if ((ticks & 0x07) == 0x07) {
+    if (_io_outputs.latch_group ^ PIN_NC)
+      Output_Task_Latch();
+    else
+      Output_Task_Direct();
+  }
+
+  // Handle additional interrupts
+  if ((ticks & 0x7f) == 0x7f) {
+    Input_ExecuteOnInterrupt();
+    _io_ticks++;
+  }
+
+  // Handle ADC -after- outputs
+  process_analog();
+}
