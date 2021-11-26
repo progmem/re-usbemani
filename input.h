@@ -34,6 +34,26 @@ typedef enum {
 } INPUT_PIN_INDEX;
 
 typedef enum {
+  ANALOG_F0,
+  ANALOG_F1,
+  ANALOG_F4 = 0x04,
+  ANALOG_F5,
+  ANALOG_F6,
+  ANALOG_F7,
+  ANALOG_D4 = 0x20,
+  ANALOG_D6,
+  ANALOG_D7,
+  ANALOG_B4,
+  ANALOG_B5,
+  ANALOG_B6,
+} ANALOG_PIN_INDEX;
+
+typedef enum {
+  ANALOG_NORMAL,
+  ANALOG_INVERT,
+} ANALOG_SHOULD_INVERT;
+
+typedef enum {
   INPUT_FREQ_1KHZ = 249,
   INPUT_FREQ_2KHZ = 124,
   INPUT_FREQ_4KHZ = 62,
@@ -74,6 +94,16 @@ typedef struct {
 
 typedef struct {
   uint8_t   active;
+  uint16_t  raw[12];
+  uint16_t  invert;
+  uint8_t   trigger[12];
+  uint8_t   release[12];
+  ANALOG_PIN_INDEX mask[12];
+  uint16_t digital;
+} Input_Analog_t;
+
+typedef struct {
+  uint8_t   active;
   uint16_t  data;
   uint8_t   group[16];
   uint8_t   mask[16];
@@ -85,6 +115,7 @@ typedef struct {
 } Output_Pins_t;
 
 void Input_RegisterButton(INPUT_PIN_INDEX pin);
+void Input_RegisterAnalog(ANALOG_PIN_INDEX pin, ANALOG_SHOULD_INVERT invert);
 void Input_RegisterRotary(INPUT_PIN_INDEX pin1, INPUT_PIN_INDEX pin2, uint16_t ppr, uint16_t hold);
 
 void Output_RegisterPin(INPUT_PIN_INDEX pin);
@@ -94,19 +125,25 @@ void InputOutput_Begin(INPUT_FREQUENCY freq);
 void Input_Task(void);
 void Output_Task(void);
 
-uint16_t Input_Ticks(uint16_t index);
+uint16_t Input_Ticks(uint8_t index);
 uint16_t Input_GetButtons(void);
-uint16_t Input_GetRotaryPhysicalPosition(uint16_t index);
-uint16_t Input_GetRotaryLogicalPosition(uint16_t index);
-uint16_t Input_GetRotaryMaximum(uint16_t index);
-uint16_t Input_GetRotaryDirection(uint16_t index);
+uint16_t Input_GetRotaryPhysicalPosition(uint8_t index);
+uint16_t Input_GetRotaryLogicalPosition(uint8_t index);
+uint16_t Input_GetRotaryMaximum(uint8_t index);
+uint16_t Input_GetRotaryDirection(uint8_t index);
+uint16_t Input_GetAnalog(uint8_t index);
+uint16_t Input_GetAnalogDigital(void);
 
-void Input_SetRotaryLogicalTarget(uint16_t index, uint16_t logical_max, uint16_t logical_per_rotation);
+void Input_RotaryLogicalTarget(uint8_t index, uint16_t logical_max, uint16_t logical_per_rotation);
+
+void Input_AnalogDigitalThresholds(uint8_t index, uint8_t trigger, uint8_t release);
 
 uint16_t*Input_PtrButtons(void);
-uint16_t*Input_PtrRotaryPhysicalPosition(uint16_t index);
-uint16_t*Input_PtrRotaryLogicalPosition(uint16_t index);
-uint16_t*Input_PtrRotaryDirection(uint16_t index);
+uint16_t*Input_PtrRotaryPhysicalPosition(uint8_t index);
+uint16_t*Input_PtrRotaryLogicalPosition(uint8_t index);
+uint16_t*Input_PtrRotaryDirection(uint8_t index);
+uint16_t*Input_PtrAnalog(uint8_t index);
+uint16_t*Input_PtrAnalogDigital(void);
 
 uint16_t Output_Get(void);
 void     Output_Set(uint16_t data);
