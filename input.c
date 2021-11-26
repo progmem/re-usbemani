@@ -72,7 +72,7 @@ static inline void process_analog(void) {
 
   // Read the top 8 bits and store in the currently-polled analog value
   _io_analog.raw[index] = ADCH;
-
+  // Invert the value if requested
   if (_io_analog.invert & (1 << index))
     _io_analog.raw[index] = 255 - _io_analog.raw[index];
 
@@ -165,7 +165,7 @@ void Input_RotaryLogicalTarget(uint8_t index, uint16_t logical_max, uint16_t log
     enc->increment16 = ((65536 / logical_max) * logical_per_rotation) / enc->max_position;
 }
 
-void Input_SetAnalogRange(uint8_t index, uint8_t trigger, uint8_t release) {
+void Input_AnalogDigitalThresholds(uint8_t index, uint8_t trigger, uint8_t release) {
   _io_analog.trigger[index] = trigger,
   _io_analog.release[index] = release;
 }

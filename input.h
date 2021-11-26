@@ -136,7 +136,7 @@ uint16_t Input_GetAnalogDigital(void);
 
 void Input_RotaryLogicalTarget(uint8_t index, uint16_t logical_max, uint16_t logical_per_rotation);
 
-void Input_SetAnalogRange(uint8_t index, uint8_t trigger, uint8_t release);
+void Input_AnalogDigitalThresholds(uint8_t index, uint8_t trigger, uint8_t release);
 
 uint16_t*Input_PtrButtons(void);
 uint16_t*Input_PtrRotaryPhysicalPosition(uint8_t index);
