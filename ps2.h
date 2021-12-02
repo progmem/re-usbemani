@@ -6,6 +6,7 @@
 typedef enum {
   PS2_C6 = 0x40,
   PS2_C7 = 0x80,
+  PS2_NC = 0xFF,
 } PS2_PIN;
 
 typedef enum {
@@ -14,7 +15,6 @@ typedef enum {
 } PS2_INVERT;
 
 typedef enum {
-  PS2_NC        = 0,
   PS2_SELECT    = (1 << 0),
   PS2_L3        = (1 << 1),
   PS2_R3        = (1 << 2),

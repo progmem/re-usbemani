@@ -1,7 +1,7 @@
 #include "usbemani.h"
 
 // Keep track of whether HID lighting is active or not
-uint8_t HIDLightingActive = 0;
+uint16_t HIDLightingActive = 0;
 
 int main(void) {
   SetupHardware();
@@ -10,18 +10,33 @@ int main(void) {
   GlobalInterruptEnable();
   USB_Init();
 
+  // Test color for analog
+  ColorProvider_t *rainbow_cp = ColorProvider_RainbowVariable(1, Input_PtrAnalog(0), 255);
+  Effect_t        *rainbow    = Effect_Single(rainbow_cp, 120, 24);
+  Effect_AutoQueue(rainbow);
+
+  ColorProvider_t *rainbow_cp2 = ColorProvider_RainbowVariable(1, Input_PtrAnalog(1), 255);
+  Effect_t        *rainbow2    = Effect_Single(rainbow_cp2, 96, 24);
+  Effect_Defer(rainbow2, Input_PtrAnalogDigital(), (1<<1));
+
+  // Effect_AutoQueue(rainbow2);
+
   for (;;) {
     // USB-related tasks
     HID_Task();
     USB_USBTask();
     // Process incoming input
     Input_Task();
+    Analog_Task();
+    Output_Task();
     // Handle the preparation of new data for the PS2
     PS2_Task();
 
     // Update traditional lighting
-    if (!HIDLightingActive)
+    if (HIDLightingActive == 0) {
       Output_Set(Input_GetButtons());
+      PORTE &= ~0x40;
+    }
 
     // Update RGB lighting
     if (RGB_Ready()) {
@@ -47,19 +62,23 @@ void SetupHardware(void) {
   // Clock should not be prescaled
   clock_prescale_set(clock_div_1);
 
+  Config_LoadFromEEPROM();
+  return;
+
+  /*
   //// Rotary Encoders
   // Up to 5 rotary encoder slots are available.
   // The first encoder registers to index 0, etc.
   // Pins on port B, D, and F are available for this usage.
   Input_RegisterRotary(PIN_F0, PIN_F1, 50, 2000);
-  Input_RegisterRotary(PIN_F4, PIN_F5, 50, 2000);
+  // Input_RegisterRotary(PIN_F4, PIN_F5, 50, 2000);
   // If desired, enter the following:
   // * The target encoder
   // * The max value in a particular game (for IIDX, 256; for SDVX, 1024)
   // * The value you would like to see after a full rotation (72 for 60Hz IIDX, 144 for 120Hz IIDX)
   // USBemani will scale the encoder output appropriately to meet the target as close as possible.
-  Input_SetRotaryLogicalTarget(0, 256, 144);
-  Input_SetRotaryLogicalTarget(1, 256, 72);
+  Input_RotaryLogicalTarget(0, 256, 144);
+  Input_RotaryLogicalTarget(1, 256, 72);
 
   //// Buttons
   // Each button is registered in the order you wish to use it.
@@ -76,6 +95,11 @@ void SetupHardware(void) {
   Input_RegisterButton(PIN_B5);
   Input_RegisterButton(PIN_B6);
   Input_RegisterButton(PIN_B7);
+
+  Input_RegisterAnalog(PIN_F5, ANALOG_NORMAL);
+  Input_RegisterAnalog(PIN_F4, ANALOG_NORMAL);
+  Input_AnalogDigitalThresholds(0, 128, 64);
+  Input_AnalogDigitalThresholds(1, 128, 64);
   // USBemani features two output methods for traditional LED lighting.
   // Pins on port B, D, and F are available for these usages:
   // * Direct, requiring one pin per light (12 buttons + 12 lights = 24 pins)
@@ -129,6 +153,7 @@ void SetupHardware(void) {
   // RGB is available on C6 or C7.
   // Indicate which pin and the number of LEDs to be used.
   RGB_Init(RGB_C7, 144);
+  */
 }
 
 void SetupEffects(void) {
@@ -225,6 +250,11 @@ void EVENT_USB_Device_ControlRequest(void) {
 void ProcessOutputReport(USBemani_Output_t *Report) {
   HIDLightingActive = 60;
   Output_Set(Report->Lights);
+
+  if (Report->Lights & 1)
+    PORTE |=  0x40;
+  else
+    PORTE &= ~0x40;
 }
 
 void CreateInputReport(USBemani_Input_t *Report) {

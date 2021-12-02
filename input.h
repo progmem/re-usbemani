@@ -30,6 +30,8 @@ typedef enum {
   PIN_F5,
   PIN_F6,
   PIN_F7,
+  OUT_INV   = 0x40, // Invert data, for EEPROM config packing
+  OUT_LATCH = 0x80, // Output pin as latch, for EEPROM config packing
   PIN_NC  = 0xFF,
 } INPUT_PIN_INDEX;
 
@@ -46,18 +48,21 @@ typedef enum {
   ANALOG_B4,
   ANALOG_B5,
   ANALOG_B6,
+  ANALOG_INV  = 0x80, // Invert, for EEPROM config packing
+  ANALOG_NC   = 0xFF,
 } ANALOG_PIN_INDEX;
 
 typedef enum {
   ANALOG_NORMAL,
-  ANALOG_INVERT,
+  ANALOG_INVERT = 0x80,
 } ANALOG_SHOULD_INVERT;
 
 typedef enum {
-  INPUT_FREQ_1KHZ = 249,
-  INPUT_FREQ_2KHZ = 124,
-  INPUT_FREQ_4KHZ = 62,
-  INPUT_FREQ_8KHZ = 31,
+  INPUT_FREQ_1KHZ  = 249,
+  INPUT_FREQ_2KHZ  = 124,
+  INPUT_FREQ_4KHZ  = 62,
+  INPUT_FREQ_8KHZ  = 31,
+  INPUT_FREQ_10KHZ = 25,
 } INPUT_FREQUENCY;
 
 typedef enum {
@@ -94,7 +99,8 @@ typedef struct {
 
 typedef struct {
   uint8_t   active;
-  uint16_t  raw[12];
+  uint8_t   raw[12]; // Raw reads
+  uint16_t  value[12]; // Converted reads
   uint16_t  invert;
   uint8_t   trigger[12];
   uint8_t   release[12];
@@ -112,6 +118,7 @@ typedef struct {
   uint8_t   precalc_ddr[3];
   uint8_t   precalc_low[3];
   uint8_t   precalc_high[3];
+  uint16_t  invert;
 } Output_Pins_t;
 
 void Input_RegisterButton(INPUT_PIN_INDEX pin);
@@ -123,6 +130,7 @@ void Output_RegisterLatch(INPUT_PIN_INDEX pin);
 
 void InputOutput_Begin(INPUT_FREQUENCY freq);
 void Input_Task(void);
+void Analog_Task(void);
 void Output_Task(void);
 
 uint16_t Input_Ticks(uint8_t index);
@@ -135,6 +143,7 @@ uint16_t Input_GetAnalog(uint8_t index);
 uint16_t Input_GetAnalogDigital(void);
 
 void Input_RotaryLogicalTarget(uint8_t index, uint16_t logical_max, uint16_t logical_per_rotation);
+void Input_RotaryHold(uint8_t index, uint16_t hold);
 
 void Input_AnalogDigitalThresholds(uint8_t index, uint8_t trigger, uint8_t release);
 

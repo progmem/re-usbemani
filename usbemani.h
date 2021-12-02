@@ -17,6 +17,7 @@
 #include "effect_deferer.h"
 #include "rgb.h"
 #include "ps2.h"
+#include "config.h"
 
 typedef enum {
   USBEMANI_COMMAND_RESET = 0xF5,

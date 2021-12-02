@@ -9,6 +9,7 @@
 typedef enum {
   RGB_C6 = 0x00,
   RGB_C7 = 0x01,
+  RGB_NC = 0xFF,
 } RGB_PIN;
 
 void RGB_Init(RGB_PIN pin, uint8_t quantity);

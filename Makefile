@@ -4,7 +4,7 @@ F_CPU        = 16000000
 F_USB        = $(F_CPU)
 OPTIMIZATION = 2
 TARGET       = build/usbemani
-SRC          = $(TARGET).c descriptors.c $(LUFA_SRC_USB) rgb.c color.c color_provider.c effect.c effect_deferer.c input.c ps2.c
+SRC          = $(TARGET).c descriptors.c $(LUFA_SRC_USB) color.c color_provider.c config.c effect.c effect_deferer.c input.c ps2.c rgb.c
 LUFA_PATH    = ./lufa/LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -Ilufa_config/ -Werror -Wall
 LD_FLAGS     =
@@ -17,6 +17,10 @@ build:
 
 flash: usbemani.hex
 	avrdude -P /dev/tty.usbmodem* -c avr109 -p m32u4 -U flash:w:build/usbemani.hex:i
+
+flash_eep: usbemani.eep
+	avrdude -P /dev/tty.usbmodem* -c avr109 -p m32u4 -U eeprom:w:build/usbemani.eep:i
+
 
 # Include LUFA-specific DMBS extension modules
 DMBS_LUFA_PATH ?= $(LUFA_PATH)/Build/LUFA
