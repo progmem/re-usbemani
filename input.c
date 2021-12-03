@@ -382,6 +382,12 @@ uint16_t*Input_PtrAnalog(uint8_t index) {
 uint16_t*Input_PtrAnalogDigital(void) {
   return &(_io_analog.digital); }
 
+uint8_t  Input_CountButtons(void) {
+  return _io_buttons.active; }
+uint8_t  Input_CountRotary(void) {
+  return _io_rotary.active; }
+uint8_t  Input_CountAnalog(void) {
+  return _io_analog.active; }
 
 uint16_t Output_Get(void) {
   return _io_outputs.data; }

@@ -77,6 +77,7 @@ Config_t EEMEM eeprom = {
       {.trigger = 128, .release = 64},
     },
     .Effect = {
+      // Turntable
       {
         .trigger  = CONFIG_DATASOURCE_ALWAYS,
         .effect   = CONFIG_EFFECT_MULTICOLOR | CONFIG_COLOR_PROVIDER_RAINBOW,
@@ -84,6 +85,70 @@ Config_t EEMEM eeprom = {
         .size     = 24,
         .quantity = 24,
         .source   = CONFIG_DATASOURCE_ENCODER | 0
+      },
+      // Keys 1 - 9
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 0,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 24,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 0) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 1,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 28,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 1) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 2,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 32,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 2) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 3,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 36,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 3) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 4,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 40,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 4) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 5,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 44,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 5) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 6,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 48,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 6) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 7,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 52,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 7) >> 8)
+      },
+      {
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 8,
+        .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
+        .start    = 56,
+        .size     = 4,
+        .hue      = (((65535 / 9) * 8) >> 8)
       },
       {.trigger = CONFIG_DATASOURCE_NC},
     }

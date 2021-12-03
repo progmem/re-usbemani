@@ -154,6 +154,10 @@ uint16_t*Input_PtrRotaryDirection(uint8_t index);
 uint16_t*Input_PtrAnalog(uint8_t index);
 uint16_t*Input_PtrAnalogDigital(void);
 
+uint8_t  Input_CountButtons(void);
+uint8_t  Input_CountRotary(void);
+uint8_t  Input_CountAnalog(void);
+
 uint16_t Output_Get(void);
 void     Output_Set(uint16_t data);
 uint16_t*Output_Ptr(void);
