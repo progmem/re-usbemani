@@ -36,3 +36,5 @@ Effect_t *Effect_Press(ColorProvider_t *color, uint8_t index, uint8_t size);
 Effect_t *Effect_SingleShot(ColorProvider_t *color, uint8_t index, uint8_t size);
 // Call the color provider once. Spawns an effect on press. Lights on hold.
 Effect_t *Effect_Splash(ColorProvider_t *color, uint8_t index, uint8_t size);
+void Effect_SetSplashFadeRate(uint8_t rate);
+void Effect_SetSplashBounds(uint8_t start, uint8_t end);

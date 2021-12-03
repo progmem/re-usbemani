@@ -2,7 +2,9 @@
 #define CALLER (HSV_Color_t (*)(void *))
 #define STRUCT (ColorProvider_t *)
 
-#define GLOBAL_BRIGHTNESS 64
+#ifndef GLOBAL_BRIGHTNESS
+#define GLOBAL_BRIGHTNESS 255
+#endif
 
 RGB_Color_t ColorProvider_Get(ColorProvider_t *self) {
   return HSV_ToRGB(self->provider(self));
@@ -56,7 +58,7 @@ HSV_Color_t _call_ColorProvider_RainbowVariable(ColorProvider_RainbowVariable_t 
     self->data16[0] += self->increment;
   } else {
     self->pos = self->quantity;
-    self->data16[0] = (*self->input * self->initial);
+    self->data16[0] = ((uint16_t)(*self->input) * self->initial);
   }
   return self->color;
 }

@@ -6,7 +6,7 @@ OPTIMIZATION = 2
 TARGET       = build/usbemani
 SRC          = $(TARGET).c descriptors.c $(LUFA_SRC_USB) color.c color_provider.c config.c effect.c effect_deferer.c input.c ps2.c rgb.c
 LUFA_PATH    = ./lufa/LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -Ilufa_config/ -Werror -Wall
+CC_FLAGS     = -DGLOBAL_BRIGHTNESS=128 -DUSE_LUFA_CONFIG_HEADER -Ilufa_config/ -Werror -Wall
 LD_FLAGS     =
 
 # Default target

@@ -16,6 +16,7 @@ int main(void) {
     // Process incoming input
     Input_Task();
     Analog_Task();
+    Rotary_Task();
     Output_Task();
     // Handle the preparation of new data for the PS2
     PS2_Task();
@@ -31,13 +32,9 @@ int main(void) {
 
     // Update RGB lighting
     if (RGB_Ready()) {
-      // Fade every LED in the framebuffer by a random amount
-      RGB_FadeRangeRandom(0, 144);
-      // Queue any deferred effects based on available input
+      RGB_ProcessFrame();
       Effect_QueueDeferred();
-      // Process the current effect queue, drawing to the framebuffer
       Effect_Run();
-      // Sync the framebuffer; no more updates can be made until the strip has been rendered out
       RGB_Sync();
     }
   }

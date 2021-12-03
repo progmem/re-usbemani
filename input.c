@@ -37,6 +37,7 @@ static inline void process_rotary(void) {
   register uint8_t pin_state = 0;
 
   Input_Rotary_t *enc = &(_io_rotary.encoders[active]);
+
   if (enc->hold)
     enc->hold--;
   else
@@ -51,17 +52,21 @@ static inline void process_rotary(void) {
 
   uint8_t result = enc->state & (INPUT_ROTARY_CW | INPUT_ROTARY_CCW);
   if (result) {
-    uint8_t increment;
-    if (result == INPUT_ROTARY_CW) {
-      increment        = enc->max_position+1;
-      enc->position16 += enc->increment16;
-    } else {
-      increment        = enc->max_position-1;
-      enc->position16 -= enc->increment16;
-    }
-    enc->position = (increment + enc->position) % enc->max_position;
     enc->direction  = result;
     enc->hold       = enc->max_hold;
+    if (result == INPUT_ROTARY_CW) {
+      enc->position++;
+      if (enc->position == enc->max_position)
+        enc->position = 0;
+      enc->position16 += enc->increment16;
+      return;
+    } else {
+      enc->position--;
+      if (enc->position == -1)
+        enc->position = enc->max_position - 1;
+      enc->position16 -= enc->increment16;
+      return;
+    }
   }
 
   active++;
@@ -305,6 +310,12 @@ void Analog_Task(void) {
   }
 }
 
+void Rotary_Task(void) {
+/*  for (uint8_t i = 0; i < _io_rotary.active; i++) {
+    Input_Rotary_t *enc = &(_io_rotary.encoders[i]);
+  }*/
+}
+
 void Output_Task(void) {
   process_output_loading_data = 1;
   Input_Buttons_t *access = NULL;
@@ -404,17 +415,20 @@ __attribute__((weak)) void Input_ExecuteOnInterrupt(void) { }
 ISR(TIMER0_COMPA_vect) {
   static volatile uint8_t ticks = 0;
 
+  PORTC &= ~(0x80 | 0x40);
   // Read pins
   raw_input[0] = PINB,
   raw_input[1] = PIND,
   raw_input[2] = PINF;
 
   // Update rotary encoders every cycle
+  PORTE |= 0x40;
   process_rotary();
+  PORTE &= ~0x40;
   ticks++;
 
   // Handle outputs
-  if (!process_output_loading_data && (ticks & 0x07) == 0x07) {
+  if (!process_output_loading_data && (ticks & 0x3f) == 0x3e) {
     if (_io_outputs.active)
       process_output_direct();
     else if (_io_outputs.latch_group != 0xFF)
@@ -422,10 +436,11 @@ ISR(TIMER0_COMPA_vect) {
   }
 
   // Handle additional interrupts
-  if ((ticks & 0x7f) == 0x7f) {
+  if ((ticks & 0x3f) == 0x3f) {
     Input_ExecuteOnInterrupt();
     _io_ticks++;
   }
 
   process_analog();
+
 }

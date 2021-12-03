@@ -46,6 +46,12 @@ typedef enum {
   CONFIG_EFFECT    = 0xF0,
 } CONFIG_RGB_EFFECT;
 
+typedef enum {
+  CONFIG_RGB_FRAMEPROCESS_CLEAR,
+  CONFIG_RGB_FRAMEPROCESS_FADE,
+  CONFIG_RGB_FRAMEPROCESS_FADERANDOM
+} CONFIG_RGB_FRAMEPROCESS;
+
 //// Structs
 // Header
 typedef struct {
@@ -118,6 +124,13 @@ typedef struct {
   uint8_t release;
 } ConfigUser_Analog_t;
 typedef struct {
+  CONFIG_RGB_FRAMEPROCESS fade_process;
+  uint8_t fade_rate;
+  uint8_t splash_fade_rate;
+  uint8_t splash_bounds_start;
+  uint8_t splash_bounds_end;
+} ConfigUser_RGB_t;
+typedef struct {
   CONFIG_DATASOURCE trigger; // Trigger for effect
   CONFIG_RGB_EFFECT effect;
   uint8_t           start;
@@ -133,6 +146,7 @@ typedef struct {
   ConfigUser_HIDOut_t   HIDOut;
   ConfigUser_Encoder_t  Encoder[5];
   ConfigUser_Analog_t   Analog[12];
+  ConfigUser_RGB_t      RGB;
   ConfigUser_Effect_t   Effect[32];
 } ConfigUser_t;
 

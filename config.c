@@ -119,6 +119,25 @@ inline void _user_analog(void) {
   }
 }
 
+inline void _user_rgb(void) {
+  ConfigUser_RGB_t rgb;
+  eeprom_read_block((void *)&rgb, (void *)&(eeprom.User.RGB), sizeof(rgb));
+
+  switch (rgb.fade_process) {
+    case CONFIG_RGB_FRAMEPROCESS_FADE:
+      RGB_SetProcessFrame(RGB_FadeRange);
+      break;
+    case CONFIG_RGB_FRAMEPROCESS_FADERANDOM:
+      RGB_SetProcessFrame(RGB_FadeRangeRandom);
+      break;
+    default:
+      RGB_SetProcessFrame(RGB_ClearRange);
+  }
+  RGB_SetFadeRate(rgb.fade_rate);
+  Effect_SetSplashFadeRate(rgb.splash_fade_rate);
+  Effect_SetSplashBounds(rgb.splash_bounds_start, rgb.splash_bounds_end);
+}
+
 inline void _user_effects(void) {
   ConfigUser_Effect_t effect;
   ColorProvider_t *pout;
@@ -194,6 +213,8 @@ inline void _user_effects(void) {
       case CONFIG_DATASOURCE_DIGITAL: // Trigger on button
         Effect_Defer(eout, Input_PtrButtons(), (1 << index));
         break;
+      case CONFIG_DATASOURCE_ENCODER: // Trigger on encoder, either direction
+        Effect_Defer(eout, Input_PtrRotaryDirection(index), INPUT_ROTARY_CW | INPUT_ROTARY_CCW);
       case CONFIG_DATASOURCE_ENCODER_CW: // Trigger on encoder, clockwise
         Effect_Defer(eout, Input_PtrRotaryDirection(index), INPUT_ROTARY_CW);
         break;
@@ -245,5 +266,6 @@ void Config_LoadFromEEPROM(void) {
   // Analog
   _user_analog();
   // RGB Effects
+  _user_rgb();
   _user_effects();
 }

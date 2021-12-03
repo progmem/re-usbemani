@@ -131,6 +131,7 @@ void Output_RegisterLatch(INPUT_PIN_INDEX pin);
 void InputOutput_Begin(INPUT_FREQUENCY freq);
 void Input_Task(void);
 void Analog_Task(void);
+void Rotary_Task(void);
 void Output_Task(void);
 
 uint16_t Input_Ticks(uint8_t index);

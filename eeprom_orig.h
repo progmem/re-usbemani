@@ -23,7 +23,6 @@ Config_t EEMEM eeprom = {
     },
     .Encoder = {
       {.pin_a = PIN_F0, .pin_b = PIN_F1, .ppr = 50},
-      {.pin_a = PIN_F0, .pin_b = PIN_F1, .ppr = 50},
       {.pin_a = PIN_NC},
     },
     .Analog = {
@@ -66,17 +65,11 @@ Config_t EEMEM eeprom = {
       {.source = CONFIG_DATASOURCE_ENCODER_CW   | 0, .output = PS2_DOWN},
       {.source = CONFIG_DATASOURCE_NC}
     },
-    .RGB = {
-      .fade_process = CONFIG_RGB_FRAMEPROCESS_FADERANDOM,
-      .fade_rate = 7,
-      .splash_fade_rate = 3,
-      .splash_bounds_start = 24,
-      .splash_bounds_end   = 59,
+    .HIDOut = {
+      .timeout = 60,
     },
-    .HIDOut = { .timeout = 60, },
     .Encoder = {
-      {.hold_time =   100, .target_max = 256, .target_rot = 144},
-      {.hold_time = 20000, .target_max = 256, .target_rot = 144},
+      {.hold_time = 1000, .target_max = 256, .target_rot = 144},
     },
     .Analog = {
       {.trigger = 128, .release = 64},
@@ -84,7 +77,7 @@ Config_t EEMEM eeprom = {
     .Effect = {
       // Turntable
       {
-        .trigger  = CONFIG_DATASOURCE_ENCODER | 1,
+        .trigger  = CONFIG_DATASOURCE_ALWAYS,
         .effect   = CONFIG_EFFECT_MULTICOLOR | CONFIG_COLOR_PROVIDER_RAINBOW,
         .start    = 0,
         .size     = 24,
@@ -93,14 +86,14 @@ Config_t EEMEM eeprom = {
       },
       // Keys 1 - 9
       {
-        .trigger  = CONFIG_DATASOURCE_DIGITAL | 8,
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 7,
         .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
         .start    = 24,
         .size     = 4,
         .hue      = (((65535 / 9) * 0) >> 8)
       },
       {
-        .trigger  = CONFIG_DATASOURCE_DIGITAL | 7,
+        .trigger  = CONFIG_DATASOURCE_DIGITAL | 8,
         .effect   = CONFIG_EFFECT_SPLASH | CONFIG_COLOR_PROVIDER_HUE,
         .start    = 28,
         .size     = 4,

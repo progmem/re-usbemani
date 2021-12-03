@@ -13,7 +13,7 @@ struct {
 } framebuffer;
 
 struct {
-  uint8_t  pin_c7;
+  uint8_t  pin;
   uint8_t *data;
   uint8_t  bitmask;
   uint16_t index;
@@ -28,13 +28,13 @@ void RGB_Init(RGB_PIN pin, uint8_t quantity) {
   framebuffer.size  = quantity;
   framebuffer.data  = calloc(quantity, sizeof(RGB_Color_t));
 
-  transmit.pin_c7 = pin;
+  transmit.pin    = pin;
   transmit.size   = quantity * 24;
   transmit.ticks  = 0;
 
   // Make sure we can output a signal
-  DDRC  |=  0x80,
-  PORTC &= ~0x80;
+  DDRC  |=  pin,
+  PORTC &= ~pin;
 
   //// Timer 1
   // Clear registers and counters
@@ -63,7 +63,7 @@ void RGB_Transmit(void) {
   if (!(transmit.state & RGB_SYNCED)) return;
 
   // Reset timer
-  TCNT1L = 57,
+  TCNT1L = 127,
   TCNT1H = 0;
 
   transmit.data     = (uint8_t *)framebuffer.data;
@@ -93,6 +93,11 @@ uint16_t *RGB_PtrTicks(void) {
 }
 
 ISR(TIMER1_COMPA_vect) {
+  asm(
+  "cbi 0x08, 7\n\t"
+  "cbi 0x08, 6\n\t"
+  );
+
   // Finish transmission
   if (transmit.index >= transmit.size) {
     TCCR1B &= ~(1 << CS10);
@@ -108,18 +113,54 @@ ISR(TIMER1_COMPA_vect) {
   transmit.index++;
   transmit.bitmask = bitmasks[transmit.index & 0x07];
 
-  if(transmit.pin_c7) {
-    asm("sbi 0x08, 7");
+  if(transmit.pin == RGB_C7) {
     if (bit_test)
-      asm("nop\nnop\nnop\nnop");
-    asm("cbi 0x08, 7");
+      asm(
+        "sbi 0x08, 7\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        // "cbi 0x08, 7\n\t"
+      );
+    else
+      asm(
+        "sbi 0x08, 7\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "cbi 0x08, 7\n\t"
+      );
     return;
   }
 
-  asm("sbi 0x08, 6");
   if (bit_test)
-    asm("nop\nnop\nnop\nnop");
-  asm("cbi 0x08, 6");
+    asm(
+      "sbi 0x08, 6\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      // "cbi 0x08, 6\n\t"
+    );
+  else
+    asm(
+      "sbi 0x08, 6\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "nop\n\t"
+      "cbi 0x08, 6\n\t"
+    );
 }
 
 void RGB_SetRange(RGB_Color_t color, uint8_t index, uint8_t size) {
@@ -169,7 +210,29 @@ void RGB_AddRange(RGB_Color_t color, uint8_t index, uint8_t size) {
   }
 }
 
-void RGB_FadeRange(uint8_t rate, uint8_t index, uint8_t size) {
+//// Screen-clearing functions
+uint8_t fade_rate = 3;
+uint8_t fade_mask = 0x03;
+void  (*framebuffer_clear_func)(uint8_t, uint8_t) = RGB_ClearRange;
+
+void RGB_SetProcessFrame(void (*clear_func)) {
+  framebuffer_clear_func = clear_func;
+}
+
+void RGB_ProcessFrame(void) {
+  if(framebuffer_clear_func)
+    framebuffer_clear_func(0, framebuffer.size);
+}
+
+void RGB_SetFadeRate(uint8_t rate) {
+  if (!rate) rate = 1;
+
+  fade_rate = rate;
+  fade_mask = rate-1;
+}
+
+void RGB_FadeRange(uint8_t index, uint8_t size) {
+  uint8_t rate = fade_rate;
   if (index >= framebuffer.size) return;
   if ((index + size) > framebuffer.size) size = framebuffer.size - index;
 
@@ -194,8 +257,8 @@ void RGB_FadeRangeRandom(uint8_t index, uint8_t size) {
   RGB_Color_t *dest = &framebuffer.data[index];
 
   while(size) {
-    uint8_t rate = 5 - (Util_Random() & 0x03);
-
+    int8_t rate = fade_rate - (Util_Random() & fade_mask);
+    if (rate < 0) rate = 0;
     r  = (dest->r << rate) - (dest->r);
     g  = (dest->g << rate) - (dest->g);
     b  = (dest->b << rate) - (dest->b);
