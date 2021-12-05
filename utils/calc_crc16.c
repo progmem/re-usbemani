@@ -21,7 +21,7 @@ int main(void) {
   Config_t config;
   memset(&config, 0, sizeof(config));
 
-  FILE *file = fopen("test.eep", "rb");
+  FILE *file = fopen("input.eep", "rb");
   fseek(file, 0L, SEEK_END);
   filesize = ftell(file);
   fseek(file, 0L, SEEK_SET);
@@ -48,7 +48,7 @@ int main(void) {
   printf("\n%04x\n", crc16);
   config.Header.crc16_user = crc16;
 
-  FILE *out = fopen("out.eep", "wb");
+  FILE *out = fopen("output.eep", "wb");
   fwrite(&config, sizeof(config), 1, out);
 
   return 0;

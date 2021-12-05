@@ -71,22 +71,25 @@ uint8_t splash_bounds_right = 255;
 void _call_Effect_SplashChild(Effect_t *self) {
   uint8_t  *left_index = &(self->index);
   uint8_t *right_index = &(self->cache8[0]);
-
+  uint8_t     in_range = 0;
   // Decrement both indexes unless it would cause it to go out of bounds
   RGB_Color_t color = HSV_ToRGB(self->provider->color);
 
   if (*left_index > splash_bounds_left) {
     (*left_index)--;
     RGB_AddRange(color, *left_index, self->size);
+    in_range++;
   }
   if (*right_index < splash_bounds_right) {
     (*right_index)++;
     RGB_AddRange(color, *right_index, self->size);
+    in_range++;
   }
   // Dim after every draw
   HSV_Dim(&self->provider->color, splash_fade_rate);
+
   // If no longer lit, cleanup.
-  if (!self->provider->color.val) {
+  if (!in_range || !self->provider->color.val) {
     free(self->provider);
     free(self);
     return;

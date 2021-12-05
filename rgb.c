@@ -212,7 +212,6 @@ void RGB_AddRange(RGB_Color_t color, uint8_t index, uint8_t size) {
 
 //// Screen-clearing functions
 uint8_t fade_rate = 3;
-uint8_t fade_mask = 0x03;
 void  (*framebuffer_clear_func)(uint8_t, uint8_t) = RGB_ClearRange;
 
 void RGB_SetProcessFrame(void (*clear_func)) {
@@ -227,8 +226,7 @@ void RGB_ProcessFrame(void) {
 void RGB_SetFadeRate(uint8_t rate) {
   if (!rate) rate = 1;
 
-  fade_rate = rate;
-  fade_mask = rate-1;
+  fade_rate  = rate;
 }
 
 void RGB_FadeRange(uint8_t index, uint8_t size) {
@@ -257,8 +255,9 @@ void RGB_FadeRangeRandom(uint8_t index, uint8_t size) {
   RGB_Color_t *dest = &framebuffer.data[index];
 
   while(size) {
-    int8_t rate = fade_rate - (Util_Random() & fade_mask);
-    if (rate < 0) rate = 0;
+    int8_t rate = fade_rate - (Util_Random() & fade_rate);
+    if (!rate) rate++;
+
     r  = (dest->r << rate) - (dest->r);
     g  = (dest->g << rate) - (dest->g);
     b  = (dest->b << rate) - (dest->b);

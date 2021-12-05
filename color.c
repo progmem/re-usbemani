@@ -242,8 +242,14 @@ void HSV_Brighten(HSV_Color_t *color, uint8_t value) {
   color->val = qadd8(color->val, value);
 }
 
+/* Old
 void HSV_Dim(HSV_Color_t *color, uint8_t value) {
   color->val = qsub8(color->val, value);
+}
+*/
+
+void HSV_Dim(HSV_Color_t *color, uint8_t value) {
+  color->val = (((uint16_t)color->val << value) - color->val) >> value;
 }
 
 uint16_t Util_Random(void) {
