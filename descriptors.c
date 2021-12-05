@@ -9,7 +9,7 @@
     HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE), \
   HID_RI_END_COLLECTION(0)
 
-USB_Descriptor_HIDReport_Datatype_t USBemaniDeviceReport[] = {
+const USB_Descriptor_HIDReport_Datatype_t PROGMEM USBemaniDeviceReport[] = {
   // Total 334 bytes
   // Start (10 bytes)
 	HID_RI_USAGE_PAGE(8, 0x01),           // Generic Desktop
@@ -205,7 +205,7 @@ uint16_t CALLBACK_USB_GetDescriptor(
 			Size    = sizeof(USB_HID_Descriptor_HID_t);
 			break;
 		case HID_DTYPE_Report:
-		  *DescriptorMemorySpace = MEMSPACE_RAM;
+		  // *DescriptorMemorySpace = MEMSPACE_RAM;
 			Address = &USBemaniDeviceReport;
 			Size    = sizeof(USBemaniDeviceReport);
 			break;
