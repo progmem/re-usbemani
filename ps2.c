@@ -157,6 +157,7 @@ void PS2_AlwaysInput(PS2_INPUT buttons) {
 
 // When a transfer is complete, determine what to do next
 ISR(SPI_STC_vect) {
+  PORTC &= ~(0x80 | 0x40);
   // If chip select is still enabled, stay in quiet mode if set.
   if (QuietTime) return;
 

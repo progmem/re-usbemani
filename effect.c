@@ -64,21 +64,27 @@ Effect_t *Effect_Press(ColorProvider_t *color, uint8_t index, uint8_t size) {
 
 // Splash: Calls the color provider once. Draws when held. Spawns an effect on press.
 //// Child: Echo outwards, dimming until no longer bright
+uint8_t splash_fade_rate = 5;
+uint8_t splash_bounds_left  = 0;
+uint8_t splash_bounds_right = 255;
+
 void _call_Effect_SplashChild(Effect_t *self) {
   uint8_t  *left_index = &(self->index);
   uint8_t *right_index = &(self->cache8[0]);
 
-  // Decrement both indexes
-  (*left_index)--;
-  (*right_index)++;
-
-  // Draw
+  // Decrement both indexes unless it would cause it to go out of bounds
   RGB_Color_t color = HSV_ToRGB(self->provider->color);
-  RGB_AddRange(color, *left_index,  self->size);
-  RGB_AddRange(color, *right_index, self->size);
 
+  if (*left_index > splash_bounds_left) {
+    (*left_index)--;
+    RGB_AddRange(color, *left_index, self->size);
+  }
+  if (*right_index < splash_bounds_right) {
+    (*right_index)++;
+    RGB_AddRange(color, *right_index, self->size);
+  }
   // Dim after every draw
-  HSV_Dim(&self->provider->color, 2);
+  HSV_Dim(&self->provider->color, splash_fade_rate);
   // If no longer lit, cleanup.
   if (!self->provider->color.val) {
     free(self->provider);
@@ -94,7 +100,7 @@ Effect_t *Effect_SplashChild(ColorProvider_t *color, uint8_t index, uint8_t size
   result->draw      = _call_Effect_SplashChild;
   result->provider  = color;
   result->index     = index;
-  result->size      = size>>1;
+  result->size      = 1;
 
   // Setup the right index as well
   uint8_t *right_index = &(result->cache8[0]);
@@ -102,6 +108,14 @@ Effect_t *Effect_SplashChild(ColorProvider_t *color, uint8_t index, uint8_t size
 
   return result;
 }
+void Effect_SetSplashFadeRate(uint8_t rate) {
+  splash_fade_rate = rate;
+}
+void Effect_SetSplashBounds(uint8_t start, uint8_t end) {
+  splash_bounds_left  = start;
+  splash_bounds_right = end;
+}
+
 //// Parent: Spawn child on press. Light on hold.
 void _call_Effect_Splash(Effect_t *self) {
   if (!self->cache8[0]) {
@@ -190,7 +204,8 @@ void Effect_Run(void) {
     Effect_t *next = effect->next;
     effect->next = NULL;
     // Draw the effect
-    effect->draw(effect);
+    if (effect->draw)
+      effect->draw(effect);
     // Advance to the next effect
     effect = next;
   }

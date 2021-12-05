@@ -10,8 +10,8 @@ typedef struct Effect_t Effect_t;
 struct Effect_t {
   void (*draw)(Effect_t *);   // Drawing handler, accepts itself
   ColorProvider_t *provider;  // Color provider
-  uint8_t index;              // First LED to draw
-  uint8_t size;               // How many LEDs to draw
+  uint8_t  index;             // First LED to draw
+  uint8_t  size;              // How many LEDs to draw
   union {                     // Data cache, subject to clearing!
     struct { uint16_t cache;     };
     struct { uint8_t  cache8[2]; };
@@ -36,3 +36,5 @@ Effect_t *Effect_Press(ColorProvider_t *color, uint8_t index, uint8_t size);
 Effect_t *Effect_SingleShot(ColorProvider_t *color, uint8_t index, uint8_t size);
 // Call the color provider once. Spawns an effect on press. Lights on hold.
 Effect_t *Effect_Splash(ColorProvider_t *color, uint8_t index, uint8_t size);
+void Effect_SetSplashFadeRate(uint8_t rate);
+void Effect_SetSplashBounds(uint8_t start, uint8_t end);
