@@ -422,9 +422,7 @@ ISR(TIMER0_COMPA_vect) {
   raw_input[2] = PINF;
 
   // Update rotary encoders every cycle
-  PORTE |= 0x40;
   process_rotary();
-  PORTE &= ~0x40;
   ticks++;
 
   // Handle outputs

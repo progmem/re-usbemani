@@ -23,11 +23,6 @@ int main(void) {
     if (!OutputList_Timer())
       Output_Set(OutputList_Build());
 
-    if (Input_GetAnalogDigital() & 1)
-      PORTE |= 0x40;
-    else
-      PORTE &= ~0x40;
-
     // Update RGB lighting
     if (RGB_Ready()) {
       RGB_ProcessFrame();

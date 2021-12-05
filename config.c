@@ -281,7 +281,35 @@ inline void _user_effects(void) {
 
 // Check if EEPROM is valid
 bool _eeprom_valid(void) {
-  return true;
+  bool status = true;
+  uint16_t crc16;
+  uint8_t *bytes;
+
+  // Device Config
+  crc16 = 0xffff;
+  bytes = (uint8_t *)&(eeprom.Device);
+  for (uint16_t i = 0; i < sizeof(ConfigDevice_t); i++) {
+    crc16 = _crc16_update(crc16, eeprom_read_byte(EEPROM_BYTE(bytes)));
+    bytes++;
+  }
+
+  if ( crc16 != eeprom_read_word( EEPROM_WORD(&(eeprom.Header.crc16_device)) ) ) {
+    status = false;
+  }
+
+  // User Config
+  crc16 = 0xffff;
+  bytes = (uint8_t *)&(eeprom.User);
+  for (uint16_t i = 0; i < sizeof(ConfigUser_t); i++) {
+    crc16 = _crc16_update(crc16, eeprom_read_byte(EEPROM_BYTE(bytes)));
+    bytes++;
+  }
+
+  if ( crc16 != eeprom_read_word( EEPROM_WORD(&(eeprom.Header.crc16_user)) ) ) {
+    status = false;
+  }
+
+  return status;
 }
 
 // Reset the EEPROM to a safe state (effectively wiping the configuration clean)
@@ -290,8 +318,10 @@ void _eeprom_reset(void) {
 
 void Config_LoadFromEEPROM(void) {
   // If EEPROM is considered dirty, don't use it.
-  if (!_eeprom_valid())
+  if (!_eeprom_valid()) {
+    PORTE |= 0x40;
     return;
+  }
 
   //// Device
   // IO
