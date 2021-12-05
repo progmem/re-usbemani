@@ -1,8 +1,6 @@
 #include "usbemani.h"
 
 // Keep track of whether HID lighting is active or not
-uint16_t HIDLightingActive = 0;
-
 int main(void) {
   SetupHardware();
 
@@ -22,8 +20,8 @@ int main(void) {
     PS2_Task();
 
     // Update traditional lighting
-    if (HIDLightingActive == 0)
-      Output_Set(Input_GetButtons());
+    if (!OutputList_Timer())
+      Output_Set(OutputList_Build());
 
     if (Input_GetAnalogDigital() & 1)
       PORTE |= 0x40;
@@ -69,12 +67,14 @@ void EVENT_USB_Device_ControlRequest(void) {
   {
     case HID_REQ_GetReport:
       if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE)) {
-        USBemani_Input_t InputReport;
-
-        CreateInputReport(&InputReport);
-
+        // USBemani_Input_t InputReport;
+        // CreateInputReport(&InputReport);
+        // Endpoint_ClearSETUP();
+        // Endpoint_Write_Control_Stream_LE(&InputReport, sizeof(USBemani_Input_t));
+        // Endpoint_ClearOUT();
+        USBemani_Input_t *InputReport = InputList_BuildReport();
         Endpoint_ClearSETUP();
-        Endpoint_Write_Control_Stream_LE(&InputReport, sizeof(USBemani_Input_t));
+        Endpoint_Write_Control_Stream_LE(InputReport, sizeof(USBemani_Input_t));
         Endpoint_ClearOUT();
       }
 
@@ -82,11 +82,9 @@ void EVENT_USB_Device_ControlRequest(void) {
     case HID_REQ_SetReport:
       if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE)) {
         USBemani_Output_t OutputReport;
-
         Endpoint_ClearSETUP();
         Endpoint_Read_Control_Stream_LE(&OutputReport, sizeof(USBemani_Output_t));
         Endpoint_ClearIN();
-
         ProcessOutputReport(&OutputReport);
       }
 
@@ -95,12 +93,19 @@ void EVENT_USB_Device_ControlRequest(void) {
 }
 
 void ProcessOutputReport(USBemani_Output_t *Report) {
-  HIDLightingActive = 60;
   Output_Set(Report->Lights);
+  OutputList_ResetTimer();
 }
 
+/*
 void CreateInputReport(USBemani_Input_t *Report) {
   memset(Report, 0, sizeof(USBemani_Input_t));
+
+  Report->Slider  = Input_GetRotaryLogicalPosition(0);
+  Report->Dial    = Input_GetRotaryLogicalPosition(1);
+  Report->Wheel   = Input_GetRotaryLogicalPosition(2);
+  Report->Z       = Input_GetRotaryLogicalPosition(3);
+  Report->RZ      = Input_GetRotaryLogicalPosition(4);
 
   if (Input_GetRotaryDirection(0)) {
     Report->LX = -100;
@@ -114,14 +119,10 @@ void CreateInputReport(USBemani_Input_t *Report) {
       Report->LY = 100;
   }
 
-  Report->Slider  = Input_GetRotaryLogicalPosition(0);
-  Report->Dial    = Input_GetRotaryLogicalPosition(1);
-  Report->Wheel   = Input_GetRotaryLogicalPosition(2);
-  Report->Z       = Input_GetRotaryLogicalPosition(3);
-  Report->RZ      = Input_GetRotaryLogicalPosition(4);
   Report->Button  = Input_GetButtons();
 
 }
+*/
 
 void HID_Task(void) {
   if (USB_DeviceState != DEVICE_STATE_Configured)
@@ -139,14 +140,16 @@ void HID_Task(void) {
 
   Endpoint_SelectEndpoint(EPADDR_IN);
   if (Endpoint_IsINReady()) {
-    USBemani_Input_t InputReport;
-    CreateInputReport(&InputReport);
-    Endpoint_Write_Stream_LE(&InputReport, sizeof(USBemani_Input_t), NULL);
+    // USBemani_Input_t InputReport;
+    // CreateInputReport(&InputReport);
+    // Endpoint_Write_Stream_LE(&InputReport, sizeof(USBemani_Input_t), NULL);
+    USBemani_Input_t *InputReport = InputList_BuildReport();
+    Endpoint_Write_Stream_LE(InputReport, sizeof(USBemani_Input_t), NULL);
     Endpoint_ClearIN();
   }
 }
 
 void Input_ExecuteOnInterrupt() {
-  if (HIDLightingActive) --HIDLightingActive;
+  OutputList_TimerTick();
   RGB_Transmit();
 }

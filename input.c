@@ -442,5 +442,4 @@ ISR(TIMER0_COMPA_vect) {
   }
 
   process_analog();
-
 }

@@ -10,8 +10,8 @@ typedef struct Effect_t Effect_t;
 struct Effect_t {
   void (*draw)(Effect_t *);   // Drawing handler, accepts itself
   ColorProvider_t *provider;  // Color provider
-  uint8_t index;              // First LED to draw
-  uint8_t size;               // How many LEDs to draw
+  uint8_t  index;             // First LED to draw
+  uint8_t  size;              // How many LEDs to draw
   union {                     // Data cache, subject to clearing!
     struct { uint16_t cache;     };
     struct { uint8_t  cache8[2]; };

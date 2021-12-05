@@ -10,15 +10,6 @@
 #include "descriptors.h"
 #include <LUFA/Platform/Platform.h>
 
-#include "input.h"
-#include "color.h"
-#include "color_provider.h"
-#include "effect.h"
-#include "effect_deferer.h"
-#include "rgb.h"
-#include "ps2.h"
-#include "config.h"
-
 typedef enum {
   USBEMANI_COMMAND_RESET = 0xF5,
 } USBEMANI_COMMAND;
@@ -54,3 +45,16 @@ void EVENT_USB_Device_StartOfFrame(void);
 
 void ProcessOutputReport(USBemani_Output_t *Report);
 void CreateInputReport(USBemani_Input_t *Report);
+
+void BuildInputReport(USBemani_Input_t *Report);
+
+#include "input.h"
+#include "input_list.h"
+#include "output_list.h"
+#include "color.h"
+#include "color_provider.h"
+#include "effect.h"
+#include "effect_deferer.h"
+#include "rgb.h"
+#include "ps2.h"
+#include "config.h"

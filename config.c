@@ -1,6 +1,52 @@
 #include "config.h"
 #include "eeprom.h"
 
+//// Datasource Divider
+typedef struct {
+  uint16_t *source;
+  union { uint16_t mask; uint16_t max; };
+} _datasource;
+
+_datasource _datasource_parse(CONFIG_DATASOURCE ds) {
+  uint8_t source = ds & CONFIG_DATASOURCE_SOURCE;
+  uint8_t index  = ds & CONFIG_DATASOURCE_INDEX;
+
+  _datasource ret = { .mask = 1 << index };
+
+  switch (source) {
+    case CONFIG_DATASOURCE_DIGITAL:
+      ret.source = Input_PtrButtons();
+      break;
+    case CONFIG_DATASOURCE_ENCODER:
+      ret.source = Input_PtrRotaryPhysicalPosition(index);
+      ret.max    = Input_GetRotaryMaximum(index);
+      break;
+    case CONFIG_DATASOURCE_ENCODER_CW:
+      ret.source = Input_PtrRotaryDirection(index);
+      ret.mask   = INPUT_ROTARY_CW;
+      break;
+    case CONFIG_DATASOURCE_ENCODER_CCW:
+      ret.source = Input_PtrRotaryDirection(index);
+      ret.mask   = INPUT_ROTARY_CCW;
+      break;
+    case CONFIG_DATASOURCE_ENCODER_DIR:
+      ret.source = Input_PtrRotaryDirection(index);
+      ret.mask   = INPUT_ROTARY_CW | INPUT_ROTARY_CCW;
+      break;
+    case CONFIG_DATASOURCE_ANALOG:
+      ret.source = Input_PtrAnalog(index);
+      ret.max    = 255;
+      break;
+    case CONFIG_DATASOURCE_ANALOG_DIGI:
+      ret.source = Input_PtrAnalogDigital();
+      break;
+    case CONFIG_DATASOURCE_OUTPUT:
+      ret.source = Output_Ptr();
+      break;
+  }
+  return ret;
+}
+
 //// Device Configuration
 inline void _device_input(void) {
   ConfigDevice_Input_t input;
@@ -66,46 +112,81 @@ inline void _device_rgb(void) {
 }
 
 //// User Configuration
+inline void _user_usb(void) {
+  ConfigUser_USBMap_t usbmap;
+  eeprom_read_block((void *)&usbmap, (void *)&(eeprom.User.USBMap), sizeof(usbmap));
+
+  // Get pointer
+  USBemani_Input_t *Report = InputList_BuildReport();
+
+  // Axis
+  for (uint8_t i = 0; i < 8; i++) {
+    if (usbmap.map[i] == CONFIG_DATASOURCE_NC) continue;
+
+    int8_t *ptr  = NULL;
+    int8_t value = -100;
+    if (i & 0x04) value = 100;
+
+    switch(i & 0x03) {
+      case 0x00: // LX
+        ptr = &(Report->LX);
+        break;
+      case 0x01: // RX
+        ptr = &(Report->RX);
+        break;
+      case 0x02: // LY
+        ptr = &(Report->LY);
+        break;
+      case 0x03: // RY
+        ptr = &(Report->RY);
+        break;
+    }
+
+    _datasource ds = _datasource_parse(usbmap.map[i]);
+    InputList_RegisterAxis(ds.source, ds.mask, ptr, value);
+  }
+
+  // Buttons
+  uint16_t *ptr = &(Report->Button);
+  for (uint8_t i = 0; i < 16; i++) {
+    if (usbmap.map[8+i] == CONFIG_DATASOURCE_NC) return;
+    uint16_t value  = (1 << i);
+
+    _datasource ds = _datasource_parse(usbmap.map[8+i]);
+    InputList_RegisterButton(ds.source, ds.mask, ptr, value);
+  }
+}
+
 inline void _user_ps2map(void) {
   ConfigUser_PS2Map_t ps2map;
 
-  for (uint8_t i = 0; i < 12; i++) {
+  for (uint8_t i = 0; i < 16; i++) {
     eeprom_read_block((void *)&ps2map, (void *)&(eeprom.User.PS2Map[i]), sizeof(ps2map));
-    uint16_t *ptr    = NULL;
-    uint16_t  source = ps2map.source & 0xF0;
-    uint16_t  mask   = 0;
+    if (ps2map.source == CONFIG_DATASOURCE_NC)
+      return;
 
-    // Stop processing
-    if (source == CONFIG_DATASOURCE_NC)
-      break;
+    _datasource ds = _datasource_parse(ps2map.source);
+    PS2_MapInput(ds.source, ds.mask, ps2map.output);
+  }
+}
 
-    // Analog buttons
-    if (source & CONFIG_DATASOURCE_ANALOG) {
-      ptr  = Input_PtrAnalogDigital();
-      mask = 1 << (ps2map.source & 0x0F);
-    }
-    // Rotary encoder
-    else if (source & CONFIG_DATASOURCE_ENCODER) {
-      uint8_t enc =  ps2map.source & 0x07;
-      ptr  = Input_PtrRotaryDirection(enc);
-      mask = (ps2map.source & 0x18) << 1;
-    }
-    // Digital buttons
-    else if (source & CONFIG_DATASOURCE_DIGITAL) {
-      ptr   = Input_PtrButtons();
-      mask  = 1 << (ps2map.source & 0x0F);
-    }
+inline void _user_out(void) {
+  ConfigUser_Out_t out;
+  eeprom_read_block((void *)&out, (void *)&(eeprom.User.Out), sizeof(out));
 
-    PS2_MapInput(ptr, mask, ps2map.output);
+  OutputList_TimeoutAt(out.hid_timeout);
+  for (uint8_t i = 0; i < 16; i++) {
+    _datasource ds = _datasource_parse(out.channels[i]);
+    OutputList_Register(ds.source, ds.mask, 1 << i);
   }
 }
 
 inline void _user_encoder(void) {
   ConfigUser_Encoder_t encoder;
 
-  for (int i = 0; i < Input_CountRotary(); i++) {
+  for (uint8_t i = 0; i < Input_CountRotary(); i++) {
     eeprom_read_block((void *)&encoder, (void *)&(eeprom.User.Encoder[i]), sizeof(encoder));
-    Input_RotaryHold(i, encoder.hold_time);
+    Input_RotaryHold(i, encoder.hold_time / Input_CountRotary());
     Input_RotaryLogicalTarget(i, encoder.target_max, encoder.target_rot);
   }
 }
@@ -113,7 +194,7 @@ inline void _user_encoder(void) {
 inline void _user_analog(void) {
   ConfigUser_Analog_t analog;
 
-  for (int i = 0; i < Input_CountAnalog(); i++) {
+  for (uint8_t i = 0; i < Input_CountAnalog(); i++) {
     eeprom_read_block((void *)&analog, (void *)&(eeprom.User.Analog[i]), sizeof(analog));
     Input_AnalogDigitalThresholds(i, analog.trigger, analog.release);
   }
@@ -143,13 +224,11 @@ inline void _user_effects(void) {
   ColorProvider_t *pout;
   Effect_t        *eout;
 
-  uint16_t *source;
-  uint16_t  max;
-  uint8_t   index;
-
   for (int i = 0; i < 32; i++) {
     eeprom_read_block((void *)&effect, (void *)&(eeprom.User.Effect[i]), sizeof(effect));
     if (effect.trigger == CONFIG_DATASOURCE_NC) return;
+
+    _datasource source  = _datasource_parse(effect.source);
 
     // Color Provider
     switch (effect.effect & CONFIG_COLOR_PROVIDER) {
@@ -163,21 +242,7 @@ inline void _user_effects(void) {
         pout = ColorProvider_HueRandom();
         break;
       case CONFIG_COLOR_PROVIDER_RAINBOW:
-        index = effect.source & CONFIG_DATASOURCE_INDEX;
-        switch (effect.source & CONFIG_DATASOURCE_SOURCE) {
-          case CONFIG_DATASOURCE_ENCODER:     // Encoder, yields 0 - max
-          case CONFIG_DATASOURCE_ENCODER_CCW: // Encoder, yields 0 - max
-            source = Input_PtrRotaryPhysicalPosition(index);
-            max    = Input_GetRotaryMaximum(index);
-            break;
-          case CONFIG_DATASOURCE_ANALOG: // Analog, yields 0 - 255
-            source = Input_PtrAnalog(index);
-            max    = 255;
-            break;
-          default: // Invalid data source, go to next
-            return;
-        }
-        pout = ColorProvider_RainbowVariable(effect.quantity, source, max);
+        pout = ColorProvider_RainbowVariable(effect.quantity, source.source, source.max);
         break;
       default: // Invalid color provider, stop
         return;
@@ -205,27 +270,11 @@ inline void _user_effects(void) {
     }
 
     // Trigger
-    index = effect.trigger & CONFIG_DATASOURCE_INDEX;
-    switch (effect.trigger & CONFIG_DATASOURCE_SOURCE) {
-      case CONFIG_DATASOURCE_ALWAYS: // Always trigger
-        Effect_AutoQueue(eout);
-        break;
-      case CONFIG_DATASOURCE_DIGITAL: // Trigger on button
-        Effect_Defer(eout, Input_PtrButtons(), (1 << index));
-        break;
-      case CONFIG_DATASOURCE_ENCODER: // Trigger on encoder, either direction
-        Effect_Defer(eout, Input_PtrRotaryDirection(index), INPUT_ROTARY_CW | INPUT_ROTARY_CCW);
-      case CONFIG_DATASOURCE_ENCODER_CW: // Trigger on encoder, clockwise
-        Effect_Defer(eout, Input_PtrRotaryDirection(index), INPUT_ROTARY_CW);
-        break;
-      case CONFIG_DATASOURCE_ENCODER_CCW: // Trigger on encoder, counter-clockwise
-        Effect_Defer(eout, Input_PtrRotaryDirection(index), INPUT_ROTARY_CCW);
-        break;
-      case CONFIG_DATASOURCE_ANALOG: // Trigger on analog, as button
-        Effect_Defer(eout, Input_PtrAnalogDigital(), (1 << index));
-        break;
-      default: // Invalid trigger, stop
-        return;
+    if (effect.trigger & CONFIG_DATASOURCE_ALWAYS)
+      Effect_AutoQueue(eout);
+    else {
+      _datasource trigger = _datasource_parse(effect.trigger);
+      Effect_Defer(eout, trigger.source, trigger.mask);
     }
   }
 }
@@ -258,9 +307,11 @@ void Config_LoadFromEEPROM(void) {
 
   //// User
   // USB Mapping
-  // _user_usb();
+  _user_usb();
   // PS2 Mapping
   _user_ps2map();
+  // Output
+  _user_out();
   // Encoders
   _user_encoder();
   // Analog

@@ -6,13 +6,7 @@
 #include <util/crc16.h>
 
 // Include everything for use in configuration
-#include "color.h"
-#include "color_provider.h"
-#include "effect.h"
-#include "effect_deferer.h"
-#include "input.h"
-#include "ps2.h"
-#include "rgb.h"
+#include "usbemani.h"
 
 #define EEPROM_BYTE(x) (const uint8_t  *)(x)
 #define EEPROM_WORD(x) (const uint16_t *)(x)
@@ -21,10 +15,17 @@
 typedef enum {
   CONFIG_DATASOURCE_ALWAYS      = 0x00, // Index doesn't matter
   CONFIG_DATASOURCE_DIGITAL     = 0x10, // 0-15
-  CONFIG_DATASOURCE_ENCODER     = 0x20, // 0-4
-  CONFIG_DATASOURCE_ENCODER_CW  = 0x28, // 0x08 << 1 = 0x10
-  CONFIG_DATASOURCE_ENCODER_CCW = 0x30, // 0x10 << 1 = 0x20
-  CONFIG_DATASOURCE_ANALOG      = 0x40, // 0-11
+
+  CONFIG_DATASOURCE_ANALOG      = 0x20, // 0-11
+  CONFIG_DATASOURCE_ANALOG_DIGI = 0x30, // 0-11 (+DIGITAL bit)
+
+  CONFIG_DATASOURCE_ENCODER     = 0x40, // 0-4
+  CONFIG_DATASOURCE_ENCODER_CCW = 0x50,
+  CONFIG_DATASOURCE_ENCODER_CW  = 0x60,
+  CONFIG_DATASOURCE_ENCODER_DIR = 0x70,
+
+  CONFIG_DATASOURCE_OUTPUT      = 0x80, // 0-15
+
   CONFIG_DATASOURCE_INDEX       = 0x0F,
   CONFIG_DATASOURCE_SOURCE      = 0xF0,
   CONFIG_DATASOURCE_NC          = 0xFF,
@@ -95,7 +96,6 @@ typedef struct {
   union {
     struct { CONFIG_DATASOURCE map[24]; };
     struct {
-      CONFIG_DATASOURCE map_button[16];
       CONFIG_DATASOURCE map_lx_neg;
       CONFIG_DATASOURCE map_rx_neg;
       CONFIG_DATASOURCE map_ly_neg;
@@ -104,6 +104,7 @@ typedef struct {
       CONFIG_DATASOURCE map_rx_pos;
       CONFIG_DATASOURCE map_ly_pos;
       CONFIG_DATASOURCE map_ry_pos;
+      CONFIG_DATASOURCE map_button[16];
     };
   };
 } ConfigUser_USBMap_t;
@@ -112,8 +113,9 @@ typedef struct {
   PS2_INPUT         output;
 } ConfigUser_PS2Map_t;
 typedef struct {
-  uint8_t timeout;
-} ConfigUser_HIDOut_t;
+  uint8_t hid_timeout;
+  CONFIG_DATASOURCE channels[16];
+} ConfigUser_Out_t;
 typedef struct {
   uint16_t hold_time;
   uint16_t target_max;
@@ -143,7 +145,7 @@ typedef struct {
 typedef struct {
   ConfigUser_USBMap_t   USBMap;
   ConfigUser_PS2Map_t   PS2Map[16];
-  ConfigUser_HIDOut_t   HIDOut;
+  ConfigUser_Out_t      Out;
   ConfigUser_Encoder_t  Encoder[5];
   ConfigUser_Analog_t   Analog[12];
   ConfigUser_RGB_t      RGB;

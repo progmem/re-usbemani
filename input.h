@@ -62,7 +62,7 @@ typedef enum {
   INPUT_FREQ_2KHZ  = 124,
   INPUT_FREQ_4KHZ  = 62,
   INPUT_FREQ_8KHZ  = 31,
-  INPUT_FREQ_10KHZ = 25,
+  INPUT_FREQ_16KHZ = 15,
 } INPUT_FREQUENCY;
 
 typedef enum {

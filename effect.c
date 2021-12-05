@@ -204,7 +204,8 @@ void Effect_Run(void) {
     Effect_t *next = effect->next;
     effect->next = NULL;
     // Draw the effect
-    effect->draw(effect);
+    if (effect->draw)
+      effect->draw(effect);
     // Advance to the next effect
     effect = next;
   }
