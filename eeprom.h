@@ -10,7 +10,7 @@ Config_t EEMEM eeprom = {
     },
     .RGB = {
       .pin      = RGB_C7,
-      .quantity = 60,
+      .quantity = 144,
     },
     .Input = {
       .pin = {PIN_D0, PIN_D1, PIN_D2, PIN_D3,

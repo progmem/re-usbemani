@@ -19,8 +19,9 @@ flash: usbemani.hex
 	avrdude -P /dev/tty.usbmodem* -c avr109 -p m32u4 -U flash:w:build/usbemani.hex:i
 
 flash_eep: usbemani.eep
-	avrdude -P /dev/tty.usbmodem* -c avr109 -p m32u4 -U eeprom:w:build/usbemani.eep:i
-
+	cd build && avr-objcopy -I ihex usbemani.eep -O binary input.eep
+	cd build && ../utils/calc_crc16
+	avrdude -P /dev/tty.usbmodem* -c avr109 -p m32u4 -U eeprom:w:build/output.eep:r
 
 # Include LUFA-specific DMBS extension modules
 DMBS_LUFA_PATH ?= $(LUFA_PATH)/Build/LUFA
